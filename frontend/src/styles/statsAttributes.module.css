@@ -419,6 +419,62 @@
   border: var(--border-width) solid var(--border-color);
 }
 
+/* Theme Button Styles */
+.themeButtons {
+  display: flex;
+  gap: var(--spacing-sm);
+}
+
+.themeButton {
+  flex: 1;
+  padding: var(--spacing-sm) var(--spacing-md);
+  background: var(--secondary-bg);
+  color: var(--secondary-text);
+  border: var(--border-width) solid var(--border-color);
+  border-radius: var(--radius-md);
+  font-size: var(--font-sm);
+  font-weight: var(--font-medium);
+  transition: all var(--transition-normal);
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+}
+
+.themeButton::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: var(--gradient-primary);
+  transition: left var(--transition-normal);
+  z-index: -1;
+}
+
+.themeButton:hover {
+  color: var(--primary-text);
+  border-color: var(--primary-blue);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-glow-blue);
+}
+
+.themeButton:hover::before {
+  left: 0;
+}
+
+.themeButton.active {
+  background: var(--gradient-primary);
+  color: var(--primary-text);
+  border-color: var(--primary-blue);
+  box-shadow: var(--shadow-glow-blue);
+  transform: translateY(-1px);
+}
+
+.themeButton.active::before {
+  display: none;
+}
+
 /* Responsive Design */
 @media (max-width: 768px) {
   .repositorySlot {

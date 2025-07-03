@@ -269,6 +269,25 @@ const StatsAttributes = ({ selectedStatsType, config, onConfigChange }) => {
     <div className={styles.configSection}>
       <h4 className={styles.sectionTitle}>Contributions Graph Configuration</h4>
       
+      {/* Theme */}
+      <div className={styles.configItem}>
+        <label className={styles.label}>Theme:</label>
+        <div className={styles.themeButtons}>
+          <button
+            className={`${styles.themeButton} ${(config.theme || 'dark') === 'dark' ? styles.active : ''}`}
+            onClick={() => handleConfigUpdate('theme', 'dark')}
+          >
+            Dark
+          </button>
+          <button
+            className={`${styles.themeButton} ${config.theme === 'light' ? styles.active : ''}`}
+            onClick={() => handleConfigUpdate('theme', 'light')}
+          >
+            Light
+          </button>
+        </div>
+      </div>
+
       {/* Animation time */}
       <div className={styles.configItem}>
         <label className={styles.label}>Animation Time (seconds):</label>
@@ -295,9 +314,21 @@ const StatsAttributes = ({ selectedStatsType, config, onConfigChange }) => {
         />
       </div>
 
+      {/* Text */}
+      <div className={styles.configItem}>
+        <label className={styles.label}>Text:</label>
+        <input
+          type="text"
+          className={styles.input}
+          placeholder="Enter custom text..."
+          value={config.text || ''}
+          onChange={(e) => handleConfigUpdate('text', e.target.value)}
+        />
+      </div>
+
       {/* Lines color with alpha */}
       <div className={styles.configItem}>
-        <label className={styles.label}>Lines Color:</label>
+        <label className={styles.label}>Line Color:</label>
         <div className={styles.colorContainer}>
           <div className={styles.colorRow}>
             <input
@@ -323,15 +354,16 @@ const StatsAttributes = ({ selectedStatsType, config, onConfigChange }) => {
         </div>
       </div>
 
-      {/* Text */}
+      {/* Square size */}
       <div className={styles.configItem}>
-        <label className={styles.label}>Text:</label>
+        <label className={styles.label}>Square Size: {config.squareSize || 11}px</label>
         <input
-          type="text"
-          className={styles.input}
-          placeholder="Enter custom text..."
-          value={config.text || ''}
-          onChange={(e) => handleConfigUpdate('text', e.target.value)}
+          type="range"
+          className={styles.slider}
+          min="1"
+          max="50"
+          value={config.squareSize || 11}
+          onChange={(e) => handleConfigUpdate('squareSize', parseInt(e.target.value))}
         />
       </div>
     </div>

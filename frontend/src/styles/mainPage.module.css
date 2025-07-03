@@ -204,11 +204,6 @@
 }
 
 /* Hover Effects */
-.leftPanel:hover {
-  transform: translateX(2px);
-  box-shadow: var(--shadow-lg);
-}
-
 .rightPanel:hover .divider {
   box-shadow: 
     0 0 15px rgba(100, 255, 218, 0.4),
