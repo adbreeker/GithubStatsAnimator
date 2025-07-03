@@ -10,10 +10,10 @@ from utils.github_svg_generator import generate_contributions_svg
 def register_contribution_graph_routes(app):
     """Register contribution graph related routes"""
     
-    @app.route('/api/contribution-graph', methods=['GET'])
+    @app.route('/api/contributions-graph', methods=['GET'])
     def get_contribution_graph():
         """
-        Generate animated GitHub contribution graph SVG
+        Generate animated GitHub contributions graph SVG
         
         Query Parameters:
         - theme (optional): 'light' or 'dark', default 'dark'

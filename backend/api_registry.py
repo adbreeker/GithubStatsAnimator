@@ -23,7 +23,7 @@ def register_all_routes(app):
             "version": "1.0.0",
             "endpoints": [
                 {
-                    "path": "/api/contribution-graph",
+                    "path": "/api/contributions-graph",
                     "method": "GET",
                     "description": "Generate animated GitHub contribution graph",
                     "parameters": {
