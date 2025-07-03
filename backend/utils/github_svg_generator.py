@@ -12,7 +12,7 @@ from typing import Dict, List, Optional, Tuple
 import calendar
 import os
 from dotenv import load_dotenv
-from chars_patterns import generate_text_pattern
+from .chars_patterns import generate_text_pattern
 
 # Load environment variables
 load_dotenv()
@@ -64,10 +64,10 @@ class GitHubContributionsAPI:
     """GitHub API client for fetching contributions data"""
     
     def __init__(self):
-        self.token = os.getenv('GITHUB_TOKEN') or os.getenv('PAT_1')
+        self.token = os.getenv('GITHUB_TOKEN')
         if not self.token:
-            raise ValueError("GITHUB_TOKEN or PAT_1 environment variable is required")
-    
+            raise ValueError("GITHUB_TOKEN environment variable is required")
+
     async def fetch_contributions(self, username: str) -> Dict:
         """Fetch contributions data from GitHub API"""
         headers = {
@@ -478,65 +478,4 @@ async def generate_contributions_svg(username: str, theme: str = "light", text: 
                   font-size="11">Check username and token</text>
         </svg>'''
 
-# CLI usage example
-if __name__ == "__main__":
-    import sys
-    if len(sys.argv) < 2:
-        print("Usage: python github_contributions.py <username> [theme] [text] [line_color] [line_alpha] [square_size] [animation_time] [pause_time]")
-        print("Theme options: light (default), dark")
-        print("Text: custom text to animate (default: ADBREEKER)")
-        print("Line color: hex color for eating lines (default: #ff8c00)")
-        print("Line alpha: transparency 0.0-1.0 (default: 0.7)")
-        print("Square size: size of contribution squares in pixels (default: 11)")
-        print("Animation time: duration of animation in seconds (default: 8.0)")
-        print("Pause time: pause between animation cycles in seconds (default: 0.0)")
-        print("Note: Spacing between squares automatically scales as 20% of square size (rounded up)")
-        print("Examples:")
-        print("  python github_contributions.py adbreeker")
-        print("  python github_contributions.py adbreeker dark")
-        print("  python github_contributions.py adbreeker light \"HELLO WORLD\"")
-        print("  python github_contributions.py adbreeker dark \"2025\" \"#00ff00\" 0.8")
-        print("  python github_contributions.py adbreeker light \"HELLO\" \"#ff8c00\" 0.7 15")
-        print("  python github_contributions.py adbreeker dark \"CODE\" \"#ff0000\" 0.9 12 10.0 2.0")
-        sys.exit(1)
-    username = sys.argv[1]
-    theme = sys.argv[2] if len(sys.argv) > 2 else "light"
-    text = sys.argv[3] if len(sys.argv) > 3 else "ADBREEKER"
-    line_color = sys.argv[4] if len(sys.argv) > 4 else "#ff8c00"
-    line_alpha = float(sys.argv[5]) if len(sys.argv) > 5 else 0.7
-    square_size = int(sys.argv[6]) if len(sys.argv) > 6 else 11
-    animation_time = float(sys.argv[7]) if len(sys.argv) > 7 else 8.0
-    pause_time = float(sys.argv[8]) if len(sys.argv) > 8 else 0.0
-    
-    if theme not in ["light", "dark"]:
-        print("Invalid theme. Use 'light' or 'dark'")
-        sys.exit(1)
-    
-    if not (0.0 <= line_alpha <= 1.0):
-        print("Invalid line alpha. Use a value between 0.0 and 1.0")
-        sys.exit(1)    # Validate hex color format
-    if not line_color.startswith('#') or len(line_color) not in [4, 7]:
-        print("Invalid line color. Use hex format like #ff8c00 or #f80")
-        sys.exit(1)
-    
-    # Validate square size
-    if not (1 <= square_size <= 50):
-        print("Invalid square size. Use a value between 1 and 50 pixels")
-        sys.exit(1)
-    
-    async def main():
-        svg_content = await generate_contributions_svg(username, theme, text, line_color, line_alpha, square_size, animation_time, pause_time)
-        # Create filename with text info
-        safe_text = "".join(c for c in text if c.isalnum())[:10]  # Safe filename
-        filename = f"{username}_contributions_{theme}_{safe_text}.svg"
-        
-        with open(filename, 'w', encoding='utf-8') as f:
-            f.write(svg_content)
-        
-        print(f"Contributions SVG saved as {filename}")
-        print(f"Animated text: '{text}'")
-        print(f"Line color: {line_color}, Alpha: {line_alpha}")
-        print(f"Square size: {square_size}px")
-        print(f"Margin: 20% of square size ({max(1, math.ceil(square_size * 0.20))}px)")
-    
-    asyncio.run(main())
+
