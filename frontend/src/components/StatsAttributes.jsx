@@ -302,10 +302,9 @@ const StatsAttributes = ({ selectedStatsType, config, onConfigChange }) => {
             <div key={lang} className={styles.languageTag}>
               <span>{lang}</span>
               <button 
-                className={styles.removeTag}
+                className="removeButton removeButtonSmall"
                 onClick={() => removeExcludedLanguage(lang)}
               >
-                ×
               </button>
             </div>
           ))}
@@ -347,10 +346,9 @@ const StatsAttributes = ({ selectedStatsType, config, onConfigChange }) => {
             <label className={styles.label}>Slot {index + 1}:</label>
             {index > 0 && (
               <button
-                className={styles.removeSlotButton}
+                className="removeButton removeButtonSmall"
                 onClick={() => removeRepositorySlot(index)}
               >
-                ×
               </button>
             )}
           </div>

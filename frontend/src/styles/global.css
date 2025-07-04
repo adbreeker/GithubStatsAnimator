@@ -278,3 +278,130 @@ ul, ol {
 .animate-spin {
   animation: spin 1s linear infinite;
 }
+
+/* Remove Button Styles - Clean & Modern */
+.removeButton {
+  position: relative;
+  width: 20px;
+  height: 20px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  border-radius: 4px;
+}
+
+.removeButton::before,
+.removeButton::after {
+  content: '';
+  position: absolute;
+  width: 12px;
+  height: 1.5px;
+  background: var(--muted-text);
+  transition: all 0.2s ease;
+}
+
+.removeButton::before {
+  transform: rotate(45deg);
+}
+
+.removeButton::after {
+  transform: rotate(-45deg);
+}
+
+.removeButton:hover::before,
+.removeButton:hover::after {
+  background: var(--error-red);
+  width: 14px;
+  height: 2px;
+}
+
+.removeButton:hover {
+  background: rgba(244, 67, 54, 0.08);
+  transform: scale(1.1);
+}
+
+.removeButton:active {
+  transform: scale(0.95);
+}
+
+.removeButton:active::before,
+.removeButton:active::after {
+  width: 10px;
+}
+
+/* Small variant */
+.removeButtonSmall {
+  width: 16px;
+  height: 16px;
+}
+
+.removeButtonSmall::before,
+.removeButtonSmall::after {
+  width: 10px;
+  height: 1px;
+}
+
+.removeButtonSmall:hover::before,
+.removeButtonSmall:hover::after {
+  width: 12px;
+  height: 1.5px;
+}
+
+/* Large variant */
+.removeButtonLarge {
+  width: 24px;
+  height: 24px;
+}
+
+.removeButtonLarge::before,
+.removeButtonLarge::after {
+  width: 14px;
+  height: 2px;
+}
+
+.removeButtonLarge:hover::before,
+.removeButtonLarge:hover::after {
+  width: 16px;
+  height: 2.5px;
+}
+
+/* Outlined variant */
+.removeButtonOutlined {
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+}
+
+.removeButtonOutlined:hover {
+  border-color: var(--error-red);
+  background: rgba(244, 67, 54, 0.05);
+}
+
+/* Subtle variant */
+.removeButtonSubtle::before,
+.removeButtonSubtle::after {
+  background: var(--secondary-text);
+  opacity: 0.6;
+}
+
+.removeButtonSubtle:hover::before,
+.removeButtonSubtle:hover::after {
+  background: var(--error-red);
+  opacity: 1;
+}
+
+.removeButtonSubtle:hover {
+  background: transparent;
+  transform: scale(1.05);
+}
+
+/* Disabled state */
+.removeButtonDisabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+  pointer-events: none;
+}
