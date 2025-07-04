@@ -1,9 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import styles from '../styles/statsAttributes.module.css';
 
 const StatsAttributes = ({ selectedStatsType, config, onConfigChange }) => {
   const [excludedLanguages, setExcludedLanguages] = useState(config.excludedLanguages || []);
   const [showLanguageDropdown, setShowLanguageDropdown] = useState(false);
+  const [dropdownPosition, setDropdownPosition] = useState('down');
+  const dropdownRef = useRef(null);
 
   // Sync excludedLanguages with config changes
   useEffect(() => {
@@ -14,6 +16,31 @@ const StatsAttributes = ({ selectedStatsType, config, onConfigChange }) => {
   useEffect(() => {
     setShowLanguageDropdown(false);
   }, [selectedStatsType]);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current) {
+        const button = dropdownRef.current.querySelector(`.${styles.addLanguageButton}`);
+        const dropdown = dropdownRef.current.querySelector(`.${styles.languageDropdown}`);
+        
+        // Check if click is outside both button and dropdown
+        const isClickOnButton = button && button.contains(event.target);
+        const isClickOnDropdown = dropdown && dropdown.contains(event.target);
+        
+        if (!isClickOnButton && !isClickOnDropdown) {
+          setShowLanguageDropdown(false);
+        }
+      }
+    };
+
+    if (showLanguageDropdown) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => {
+        document.removeEventListener('mousedown', handleClickOutside);
+      };
+    }
+  }, [showLanguageDropdown]);
 
   // Common options for slots
   const slotOptions = [
@@ -87,7 +114,25 @@ const StatsAttributes = ({ selectedStatsType, config, onConfigChange }) => {
   const handleShowLanguageDropdown = (event) => {
     event.preventDefault();
     event.stopPropagation();
-    setShowLanguageDropdown(!showLanguageDropdown);
+    
+    if (!showLanguageDropdown) {
+      // Calculate if dropdown should go up or down
+      const button = event.currentTarget;
+      const buttonRect = button.getBoundingClientRect();
+      const viewportHeight = window.innerHeight;
+      const dropdownHeight = 200; // max-height from CSS
+      const spaceBelow = viewportHeight - buttonRect.bottom;
+      const spaceAbove = buttonRect.top;
+      
+      // If there's not enough space below and there's more space above, position upward
+      if (spaceBelow < dropdownHeight && spaceAbove > spaceBelow) {
+        setDropdownPosition('up');
+      } else {
+        setDropdownPosition('down');
+      }
+    }
+    
+    setShowLanguageDropdown(prev => !prev);
   };
 
   const addExcludedLanguage = (language) => {
@@ -103,6 +148,71 @@ const StatsAttributes = ({ selectedStatsType, config, onConfigChange }) => {
     const newExcluded = excludedLanguages.filter(lang => lang !== language);
     setExcludedLanguages(newExcluded);
     handleConfigUpdate('excludedLanguages', newExcluded);
+  };
+
+  // Custom NumberInput component
+  const NumberInput = ({ value, onChange, min, max, step, ...props }) => {
+    const handleIncrement = () => {
+      const currentValue = parseFloat(value) || 0;
+      const stepValue = parseFloat(step) || 1;
+      const newValue = Math.min(currentValue + stepValue, max || Infinity);
+      const formattedValue = formatNumberValue(newValue, step);
+      onChange({ target: { value: formattedValue } });
+    };
+
+    const handleDecrement = () => {
+      const currentValue = parseFloat(value) || 0;
+      const stepValue = parseFloat(step) || 1;
+      const newValue = Math.max(currentValue - stepValue, min || -Infinity);
+      const formattedValue = formatNumberValue(newValue, step);
+      onChange({ target: { value: formattedValue } });
+    };
+
+    const handleInputChange = (e) => {
+      const inputValue = e.target.value;
+      // Allow the user to type freely, but format on blur
+      onChange(e);
+    };
+
+    const handleBlur = (e) => {
+      const inputValue = parseFloat(e.target.value);
+      if (!isNaN(inputValue)) {
+        const formattedValue = formatNumberValue(inputValue, step);
+        onChange({ target: { value: formattedValue } });
+      }
+    };
+
+    const formatNumberValue = (value, step) => {
+      const stepStr = step ? step.toString() : '1';
+      const decimalPlaces = stepStr.includes('.') ? stepStr.split('.')[1].length : 0;
+      return parseFloat(value.toFixed(decimalPlaces)).toString();
+    };
+
+    return (
+      <div className={styles.numberInputContainer}>
+        <button
+          type="button"
+          className={`${styles.numberInputButton} ${styles.decrement}`}
+          onClick={handleDecrement}
+        />
+        <input
+          type="number"
+          className={styles.numberInput}
+          value={value}
+          onChange={handleInputChange}
+          onBlur={handleBlur}
+          min={min}
+          max={max}
+          step={step}
+          {...props}
+        />
+        <button
+          type="button"
+          className={`${styles.numberInputButton} ${styles.increment}`}
+          onClick={handleIncrement}
+        />
+      </div>
+    );
   };
 
   const renderAccountGeneralConfig = () => (
@@ -199,7 +309,7 @@ const StatsAttributes = ({ selectedStatsType, config, onConfigChange }) => {
               </button>
             </div>
           ))}
-          <div className={styles.addLanguageContainer}>
+          <div className={styles.addLanguageContainer} ref={dropdownRef}>
             <button
               className={styles.addLanguageButton}
               onClick={handleShowLanguageDropdown}
@@ -207,7 +317,7 @@ const StatsAttributes = ({ selectedStatsType, config, onConfigChange }) => {
               + Add Language
             </button>
             {showLanguageDropdown && (
-              <div className={styles.languageDropdown}>
+              <div className={`${styles.languageDropdown} ${dropdownPosition === 'up' ? styles.dropdownUp : styles.dropdownDown}`}>
                 {programmingLanguages
                   .filter(lang => !excludedLanguages.includes(lang))
                   .map((lang) => (
@@ -303,9 +413,7 @@ const StatsAttributes = ({ selectedStatsType, config, onConfigChange }) => {
       {/* Animation time */}
       <div className={styles.configItem}>
         <label className={styles.label}>Animation Time (seconds):</label>
-        <input
-          type="number"
-          className={styles.numberInput}
+        <NumberInput
           min="0.1"
           step="0.1"
           value={config.animationTime || 2.0}
@@ -316,9 +424,7 @@ const StatsAttributes = ({ selectedStatsType, config, onConfigChange }) => {
       {/* Pause time */}
       <div className={styles.configItem}>
         <label className={styles.label}>Pause Time (seconds):</label>
-        <input
-          type="number"
-          className={styles.numberInput}
+        <NumberInput
           min="0.1"
           step="0.1"
           value={config.pauseTime || 1.0}
@@ -352,15 +458,22 @@ const StatsAttributes = ({ selectedStatsType, config, onConfigChange }) => {
             <span className={styles.colorValue}>{config.linesColor || '#39d353'}</span>
           </div>
           <div className={styles.alphaRow}>
-            <span className={styles.alphaLabel}>Alpha: {(config.linesAlpha || 1.0).toFixed(2)}</span>
+            <span className={styles.alphaLabel}>Alpha: {(config.linesAlpha ?? 1.0).toFixed(2)}</span>
             <input
               type="range"
               className={styles.slider}
               min="0"
               max="1"
               step="0.01"
-              value={config.linesAlpha || 1.0}
-              onChange={(e) => handleConfigUpdate('linesAlpha', parseFloat(e.target.value))}
+              value={config.linesAlpha ?? 1.0}
+              onInput={(e) => {
+                const value = Math.max(0, Math.min(1, parseFloat(e.target.value) || 0));
+                handleConfigUpdate('linesAlpha', value);
+              }}
+              onChange={(e) => {
+                const value = Math.max(0, Math.min(1, parseFloat(e.target.value) || 0));
+                handleConfigUpdate('linesAlpha', value);
+              }}
             />
           </div>
         </div>
