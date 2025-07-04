@@ -6,7 +6,7 @@
   height: fit-content;
   box-shadow: var(--shadow-md);
   position: relative;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .attributesPanel::before {
@@ -193,6 +193,13 @@
   border-radius: var(--radius-sm);
   outline: none;
   transition: all var(--transition-normal);
+  position: relative;
+  z-index: 1;
+}
+
+.slider:focus {
+  box-shadow: 0 0 0 2px rgba(61, 90, 254, 0.3);
+  z-index: 0;
 }
 
 .slider::-webkit-slider-thumb {
@@ -205,11 +212,14 @@
   cursor: pointer;
   box-shadow: var(--shadow-sm);
   transition: all var(--transition-normal);
+  position: relative;
+  z-index: 2;
 }
 
 .slider::-webkit-slider-thumb:hover {
   transform: scale(1.1);
   box-shadow: var(--shadow-glow-blue);
+  z-index: 3;
 }
 
 .slider::-moz-range-thumb {
@@ -220,6 +230,8 @@
   cursor: pointer;
   border: none;
   box-shadow: var(--shadow-sm);
+  position: relative;
+  z-index: 2;
 }
 
 .checkbox {
@@ -353,6 +365,7 @@
   min-width: 250px;
   overflow-y: auto;
   animation: slideInUp var(--transition-normal);
+  margin-top: var(--spacing-xs);
 }
 
 .languageOption {

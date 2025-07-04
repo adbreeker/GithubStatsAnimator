@@ -1,9 +1,19 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import styles from '../styles/statsAttributes.module.css';
 
 const StatsAttributes = ({ selectedStatsType, config, onConfigChange }) => {
   const [excludedLanguages, setExcludedLanguages] = useState(config.excludedLanguages || []);
   const [showLanguageDropdown, setShowLanguageDropdown] = useState(false);
+
+  // Sync excludedLanguages with config changes
+  useEffect(() => {
+    setExcludedLanguages(config.excludedLanguages || []);
+  }, [config.excludedLanguages]);
+
+  // Close dropdown when stats type changes
+  useEffect(() => {
+    setShowLanguageDropdown(false);
+  }, [selectedStatsType]);
 
   // Common options for slots
   const slotOptions = [
@@ -75,6 +85,8 @@ const StatsAttributes = ({ selectedStatsType, config, onConfigChange }) => {
   };
 
   const handleShowLanguageDropdown = (event) => {
+    event.preventDefault();
+    event.stopPropagation();
     setShowLanguageDropdown(!showLanguageDropdown);
   };
 
@@ -148,13 +160,13 @@ const StatsAttributes = ({ selectedStatsType, config, onConfigChange }) => {
 
       {/* Percentage floating point slider */}
       <div className={styles.configItem}>
-        <label className={styles.label}>Percentage Decimal Places: {config.percentageDecimals || 1}</label>
+        <label className={styles.label}>Percentage Decimal Places: {config.percentageDecimals ?? 1}</label>
         <input
           type="range"
           className={styles.slider}
           min="0"
           max="3"
-          value={config.percentageDecimals || 1}
+          value={config.percentageDecimals ?? 1}
           onChange={(e) => handleConfigUpdate('percentageDecimals', parseInt(e.target.value))}
         />
       </div>
@@ -190,7 +202,7 @@ const StatsAttributes = ({ selectedStatsType, config, onConfigChange }) => {
           <div className={styles.addLanguageContainer}>
             <button
               className={styles.addLanguageButton}
-              onClick={() => setShowLanguageDropdown(!showLanguageDropdown)}
+              onClick={handleShowLanguageDropdown}
             >
               + Add Language
             </button>
