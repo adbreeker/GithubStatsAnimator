@@ -38,7 +38,7 @@
 }
 
 .title {
-  font-size: var(--font-lg);
+  font-size: var(--font-xl);
   font-weight: var(--font-semibold);
   color: var(--accent-text);
 }
@@ -51,7 +51,7 @@
 }
 
 .sectionTitle {
-  font-size: var(--font-md);
+  font-size: var(--font-lg);
   font-weight: var(--font-semibold);
   color: var(--neon-green);
   margin-bottom: var(--spacing-sm);
@@ -62,11 +62,11 @@
 .configItem {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-xs);
+  gap: var(--spacing-sm);
 }
 
 .label {
-  font-size: var(--font-sm);
+  font-size: var(--font-md);
   font-weight: var(--font-medium);
   color: var(--primary-text);
 }
@@ -75,7 +75,7 @@
   display: flex;
   align-items: center;
   gap: var(--spacing-sm);
-  font-size: var(--font-sm);
+  font-size: var(--font-md);
   color: var(--primary-text);
   cursor: pointer;
 }
@@ -87,7 +87,7 @@
   color: var(--primary-text);
   border: var(--border-width) solid var(--border-color);
   border-radius: var(--radius-md);
-  font-size: var(--font-sm);
+  font-size: var(--font-md);
   transition: all var(--transition-normal);
   cursor: pointer;
   position: relative;
@@ -126,7 +126,7 @@
   color: var(--primary-text);
   border: var(--border-width) solid var(--border-color);
   border-radius: var(--radius-md);
-  font-size: var(--font-sm);
+  font-size: var(--font-md);
   transition: all var(--transition-normal);
 }
 
@@ -150,7 +150,7 @@
   color: var(--primary-text);
   border: var(--border-width) solid var(--border-color);
   border-radius: var(--radius-md);
-  font-size: var(--font-sm);
+  font-size: var(--font-md);
   width: 120px;
   transition: all var(--transition-normal);
   -webkit-appearance: none;
@@ -385,10 +385,51 @@
 }
 
 .checkbox {
-  width: 18px;
-  height: 18px;
-  accent-color: var(--primary-blue);
+  width: 20px;
+  height: 20px;
+  position: relative;
   cursor: pointer;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  background: var(--primary-bg);
+  border: 2px solid var(--secondary-text);
+  border-radius: var(--radius-sm);
+  transition: all var(--transition-fast);
+  outline: none;
+}
+
+.checkbox:hover {
+  border-color: var(--primary-blue);
+  background: var(--accent-bg);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(61, 90, 254, 0.15);
+}
+
+.checkbox:focus {
+  border-color: var(--primary-blue);
+  transform: translateY(-1px);
+  box-shadow: 
+    0 4px 12px rgba(61, 90, 254, 0.15),
+    0 0 0 3px rgba(61, 90, 254, 0.1);
+}
+
+.checkbox:checked {
+  background: var(--gradient-primary);
+  border-color: var(--primary-blue);
+  box-shadow: var(--shadow-glow-blue);
+}
+
+.checkbox:checked::before {
+  content: '✓';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: bold;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
 }
 
 /* Repository Slots */

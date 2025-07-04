@@ -146,9 +146,14 @@ body {
 }
 
 /* Focus Styles */
-*:focus {
-  outline: 2px solid var(--neon-green);
+* {
+  outline: 2px solid transparent;
   outline-offset: 2px;
+  transition: outline-color var(--transition-normal);
+}
+
+*:focus {
+  outline-color: var(--neon-green);
 }
 
 /* Button Reset */
