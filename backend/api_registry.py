@@ -2,7 +2,7 @@
 API Registry
 Central place to register all API routes
 """
-from api_handlers.contribution_graph_handler import register_contribution_graph_routes
+from api_handlers.contributions_graph_handler import register_contribution_graph_routes
 
 def register_all_routes(app):
     """Register all API routes with the Flask app"""
@@ -25,7 +25,7 @@ def register_all_routes(app):
                 {
                     "path": "/api/contributions-graph",
                     "method": "GET",
-                    "description": "Generate animated GitHub contribution graph",
+                    "description": "Generate animated GitHub contributions graph",
                     "parameters": {
                         "theme": "light or dark (default: dark)",
                         "text": "Text to animate (default: ADBREEKER)", 
