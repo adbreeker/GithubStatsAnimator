@@ -17,11 +17,11 @@ def test_animated_percentages_and_names():
     
     # Test data with some longer language names
     test_languages = [
-        ("JavaScript", 45.2),
-        ("Python", 23.8),
-        ("TypeScript", 15.1),
-        ("Jupyter Notebook", 10.3),  # Longer name to test layout
-        ("Other", 5.6)
+        ("JavaScript", 45.2, "#f1e05a"),
+        ("Python", 23.8, "#3572a5"),
+        ("TypeScript", 15.1, "#2b7489"),
+        ("Jupyter Notebook", 10.3, "#da5b0b"),  # Longer name to test layout
+        ("Other", 5.6, "#858585")
     ]
     
     # Test with default dimensions

@@ -21,11 +21,11 @@ def test_final_improvements():
     os.makedirs(results_dir, exist_ok=True)
     
     test_languages = [
-        ("JavaScript", 45.2),
-        ("Python", 23.8), 
-        ("TypeScript", 15.1),
-        ("C", 10.3),
-        ("Other", 5.6)
+        ("JavaScript", 45.2, "#f1e05a"),
+        ("Python", 23.8, "#3572a5"), 
+        ("TypeScript", 15.1, "#2b7489"),
+        ("C", 10.3, "#555555"),
+        ("Other", 5.6, "#858585")
     ]
     
     # Test default size

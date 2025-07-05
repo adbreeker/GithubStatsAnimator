@@ -20,11 +20,11 @@ def test_encoding():
     
     # Test languages with special characters
     test_languages = [
-        ("C#", 45.0),
-        ("C++", 25.0), 
-        ("F#", 15.0),
-        ("Objective-C", 10.0),
-        ("Shell & Scripts", 5.0)
+        ("C#", 45.0, "#239120"),
+        ("C++", 25.0, "#f34b7d"), 
+        ("F#", 15.0, "#b845fc"),
+        ("Objective-C", 10.0, "#438eff"),
+        ("Shell & Scripts", 5.0, "#89e051")
     ]
     
     # Test with different sizes

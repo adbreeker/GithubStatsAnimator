@@ -16,42 +16,7 @@ load_dotenv()
 # GitHub GraphQL API endpoint
 GITHUB_GRAPHQL_URL = "https://api.github.com/graphql"
 
-# Language colors (GitHub's official colors)
-LANGUAGE_COLORS = {
-    "JavaScript": "#f1e05a",
-    "Python": "#3572a5",
-    "Java": "#b07219",
-    "TypeScript": "#2b7489",
-    "C#": "#239120",
-    "C++": "#f34b7d",
-    "C": "#555555",
-    "PHP": "#4f5d95",
-    "Ruby": "#701516",
-    "Go": "#00add8",
-    "Rust": "#dea584",
-    "Swift": "#ffac45",
-    "Kotlin": "#f18e33",
-    "HTML": "#e34c26",
-    "CSS": "#1572b6",
-    "Shell": "#89e051",
-    "Dart": "#00b4ab",
-    "R": "#198ce7",
-    "Scala": "#c22d40",
-    "Perl": "#0298c3",
-    "Haskell": "#5e5086",
-    "Lua": "#000080",
-    "MATLAB": "#e16737",
-    "Objective-C": "#438eff",
-    "Vue": "#2c3e50",
-    "Jupyter Notebook": "#da5b0b",
-    "Dockerfile": "#384d54",
-    "Makefile": "#427819",
-    "TeX": "#3d6117",
-    "YAML": "#cb171e",
-    "JSON": "#292929",
-}
-
-# Default color for unknown languages
+# Default color for unknown languages or when GitHub API doesn't provide a color
 DEFAULT_LANGUAGE_COLOR = "#858585"
 
 # SVG Themes
@@ -132,7 +97,7 @@ class GitHubLanguagesGraphQL:
                 
                 return data['data']['user']['repositories']['nodes']
 
-async def get_top_languages_graphql(username: str, languages_count: int = 5, exclude_languages: List[str] = None, count_other_languages: bool = False, exclude_repos: List[str] = None) -> List[Tuple[str, float]]:
+async def get_top_languages_graphql(username: str, languages_count: int = 5, exclude_languages: List[str] = None, count_other_languages: bool = False, exclude_repos: List[str] = None) -> List[Tuple[str, float, str]]:
     """Get top languages using GraphQL - much faster implementation"""
     if exclude_repos is None:
         exclude_repos = []
@@ -148,8 +113,9 @@ async def get_top_languages_graphql(username: str, languages_count: int = 5, exc
     exclude_set = set(exclude_repos)
     filtered_repos = [repo for repo in repos if repo['name'] not in exclude_set]
     
-    # Aggregate language data
+    # Aggregate language data with colors
     language_bytes = {}
+    language_colors = {}
     exclude_languages_set = set(exclude_languages)
     
     for repo in filtered_repos:
@@ -161,6 +127,11 @@ async def get_top_languages_graphql(username: str, languages_count: int = 5, exc
                 continue
                 
             language_size = language_edge['size']
+            language_color = language_edge['node']['color']
+            
+            # Store color (GitHub API provides the official color)
+            if language_name not in language_colors and language_color:
+                language_colors[language_name] = language_color
             
             if language_name in language_bytes:
                 language_bytes[language_name] += language_size
@@ -186,15 +157,16 @@ async def get_top_languages_graphql(username: str, languages_count: int = 5, exc
         top_bytes = sum(bytes_count for _, bytes_count in top_n_languages)
         other_bytes = sum(bytes_count for _, bytes_count in remaining_languages)
         
-        # Add top languages with their actual percentages
+        # Add top languages with their actual percentages and colors
         for language, bytes_count in top_n_languages:
             percentage = (bytes_count / total_bytes) * 100
-            top_languages.append((language, percentage))
+            color = language_colors.get(language, DEFAULT_LANGUAGE_COLOR)
+            top_languages.append((language, percentage, color))
         
         # Add "Other" category if there are remaining languages
         if other_bytes > 0:
             other_percentage = (other_bytes / total_bytes) * 100
-            top_languages.append(("Other", other_percentage))
+            top_languages.append(("Other", other_percentage, "#858585"))
     else:
         # Original behavior: redistribute 100% among top languages only
         selected_languages = sorted_languages[:languages_count]
@@ -204,11 +176,12 @@ async def get_top_languages_graphql(username: str, languages_count: int = 5, exc
             for language, bytes_count in selected_languages:
                 # Redistribute percentages to sum to 100%
                 percentage = (bytes_count / selected_total_bytes) * 100
-                top_languages.append((language, percentage))
+                color = language_colors.get(language, DEFAULT_LANGUAGE_COLOR)
+                top_languages.append((language, percentage, color))
     
     return top_languages
 
-def create_language_bar_chart(languages: List[Tuple[str, float]], theme: str, width: int, height: int, decimal_places: int) -> str:
+def create_language_bar_chart(languages: List[Tuple[str, float, str]], theme: str, width: int, height: int, decimal_places: int) -> str:
     """Create responsive SVG bar chart for languages"""
     colors = THEMES[theme]
     title = "Most Used Languages"
@@ -307,7 +280,7 @@ def create_language_bar_chart(languages: List[Tuple[str, float]], theme: str, wi
         
         max_percentage = max(lang[1] for lang in languages)
         
-        for i, (language, percentage) in enumerate(languages):
+        for i, (language, percentage, lang_color) in enumerate(languages):
             y = y_start + (i * (bar_height + bar_spacing))
             bar_width = (percentage / max_percentage) * max_bar_width
             
@@ -318,11 +291,7 @@ def create_language_bar_chart(languages: List[Tuple[str, float]], theme: str, wi
             bar_delay = i * 0.15  # 150ms delay between each bar (faster)
             text_delay = 1.5 + (i * 0.3)  # Text starts after bars finish (1.5s) + sequential delay
             
-            # Get language color
-            if language == "Other":
-                lang_color = "#858585"
-            else:
-                lang_color = LANGUAGE_COLORS.get(language, DEFAULT_LANGUAGE_COLOR)
+            # Use the color from GitHub API (already provided in the tuple)
             
             # Language bar with staggered animation
             svg += f'''
