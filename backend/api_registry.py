@@ -47,11 +47,12 @@ def register_all_routes(app):
                     "description": "Generate GitHub top languages SVG chart",
                     "parameters": {
                         "theme": "light or dark (default: dark)",
-                        "limit": "Number of languages to show 1-20 (default: 5)",
+                        "languages_count": "Number of languages to show 1-20 (default: 5)",
+                        "decimal_places": "Precision for percentages 0-5 (default: 1, 0 for no floating point)",
+                        "count_other_languages": "Include 'Other' category for remaining languages true/false (default: false)",
+                        "exclude_languages": "Comma-separated list of languages to exclude (default: empty)",
                         "width": "SVG width in pixels 200-1000 (default: 400)",
-                        "height": "SVG height in pixels 150-800 (default: 300)",
-                        "show_percentages": "Show percentage labels true/false (default: true)",
-                        "title": "Custom title (default: Most Used Languages)"
+                        "height": "SVG height in pixels 150-800 (default: 300)"
                     },
                     "note": "GitHub username is read from GITHUB_USERNAME environment variable"
                 }

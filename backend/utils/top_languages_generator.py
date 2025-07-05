@@ -132,10 +132,12 @@ class GitHubLanguagesGraphQL:
                 
                 return data['data']['user']['repositories']['nodes']
 
-async def get_top_languages_graphql(username: str, limit: int = 5, exclude_repos: List[str] = None) -> List[Tuple[str, float]]:
+async def get_top_languages_graphql(username: str, languages_count: int = 5, exclude_languages: List[str] = None, count_other_languages: bool = False, exclude_repos: List[str] = None) -> List[Tuple[str, float]]:
     """Get top languages using GraphQL - much faster implementation"""
     if exclude_repos is None:
         exclude_repos = []
+    if exclude_languages is None:
+        exclude_languages = []
         
     api = GitHubLanguagesGraphQL()
     
@@ -148,10 +150,16 @@ async def get_top_languages_graphql(username: str, limit: int = 5, exclude_repos
     
     # Aggregate language data
     language_bytes = {}
+    exclude_languages_set = set(exclude_languages)
     
     for repo in filtered_repos:
         for language_edge in repo['languages']['edges']:
             language_name = language_edge['node']['name']
+            
+            # Skip excluded languages
+            if language_name in exclude_languages_set:
+                continue
+                
             language_size = language_edge['size']
             
             if language_name in language_bytes:
@@ -168,15 +176,42 @@ async def get_top_languages_graphql(username: str, limit: int = 5, exclude_repos
     sorted_languages = sorted(language_bytes.items(), key=lambda x: x[1], reverse=True)
     top_languages = []
     
-    for language, bytes_count in sorted_languages[:limit]:
-        percentage = (bytes_count / total_bytes) * 100
-        top_languages.append((language, percentage))
+    # Handle "Other" category logic
+    if count_other_languages and len(sorted_languages) > languages_count:
+        # Get top N languages
+        top_n_languages = sorted_languages[:languages_count]
+        remaining_languages = sorted_languages[languages_count:]
+        
+        # Calculate percentages for top languages
+        top_bytes = sum(bytes_count for _, bytes_count in top_n_languages)
+        other_bytes = sum(bytes_count for _, bytes_count in remaining_languages)
+        
+        # Add top languages with their actual percentages
+        for language, bytes_count in top_n_languages:
+            percentage = (bytes_count / total_bytes) * 100
+            top_languages.append((language, percentage))
+        
+        # Add "Other" category if there are remaining languages
+        if other_bytes > 0:
+            other_percentage = (other_bytes / total_bytes) * 100
+            top_languages.append(("Other", other_percentage))
+    else:
+        # Original behavior: redistribute 100% among top languages only
+        selected_languages = sorted_languages[:languages_count]
+        selected_total_bytes = sum(bytes_count for _, bytes_count in selected_languages)
+        
+        if selected_total_bytes > 0:
+            for language, bytes_count in selected_languages:
+                # Redistribute percentages to sum to 100%
+                percentage = (bytes_count / selected_total_bytes) * 100
+                top_languages.append((language, percentage))
     
     return top_languages
 
-def create_language_bar_chart(languages: List[Tuple[str, float]], theme: str, width: int, height: int, show_percentages: bool, title: str) -> str:
+def create_language_bar_chart(languages: List[Tuple[str, float]], theme: str, width: int, height: int, decimal_places: int) -> str:
     """Create SVG bar chart for languages"""
     colors = THEMES[theme]
+    title = "Most Used Languages"
     
     # Calculate dimensions
     padding = 40
@@ -211,7 +246,10 @@ def create_language_bar_chart(languages: List[Tuple[str, float]], theme: str, wi
             bar_width = (percentage / max_percentage) * (chart_width - 100)
             
             # Get language color
-            lang_color = LANGUAGE_COLORS.get(language, DEFAULT_LANGUAGE_COLOR)
+            if language == "Other":
+                lang_color = "#858585"  # Gray for "Other" category
+            else:
+                lang_color = LANGUAGE_COLORS.get(language, DEFAULT_LANGUAGE_COLOR)
             
             # Language bar
             svg += f'''
@@ -225,26 +263,30 @@ def create_language_bar_chart(languages: List[Tuple[str, float]], theme: str, wi
           font-size="12" font-weight="500">{language}</text>
     '''
             
-            # Show percentage if enabled
-            if show_percentages:
-                svg += f'''
+            # Format percentage based on decimal places
+            if decimal_places == 0:
+                percentage_text = f"{percentage:.0f}%"
+            else:
+                percentage_text = f"{percentage:.{decimal_places}f}%"
+                
+            svg += f'''
     <text x="{width - padding}" y="{y + bar_height/2 + 4}" text-anchor="end"
           fill="{colors['subtitle_color']}" 
           font-family="-apple-system,BlinkMacSystemFont,Segoe UI,Helvetica,Arial,sans-serif" 
-          font-size="11">{percentage:.1f}%</text>
+          font-size="11">{percentage_text}</text>
     '''
     
     svg += '</svg>'
     return svg
 
-async def create_top_languages_svg(username: str, theme: str = "dark", limit: int = 5, width: int = 400, height: int = 300, show_percentages: bool = True, title: str = "Most Used Languages", exclude_repos: List[str] = None) -> str:
+async def create_top_languages_svg(username: str, theme: str = "dark", languages_count: int = 5, decimal_places: int = 1, count_other_languages: bool = False, exclude_languages: List[str] = None, width: int = 400, height: int = 300, exclude_repos: List[str] = None) -> str:
     """Main function to generate top languages SVG using GraphQL"""
     try:
         # Get top languages data using GraphQL
-        languages = await get_top_languages_graphql(username, limit, exclude_repos)
+        languages = await get_top_languages_graphql(username, languages_count, exclude_languages, count_other_languages, exclude_repos)
         
         # Generate SVG
-        svg = create_language_bar_chart(languages, theme, width, height, show_percentages, title)
+        svg = create_language_bar_chart(languages, theme, width, height, decimal_places)
         return svg
         
     except ValueError as e:

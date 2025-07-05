@@ -140,11 +140,9 @@ async def test_top_languages_basic(runner):
         svg_content = await create_top_languages_svg(
             username=username,
             theme="dark",
-            limit=5,
+            languages_count=5,
             width=400,
-            height=300,
-            show_percentages=True,
-            title="Most Used Languages"
+            height=300
         )
         
         filename = os.path.join(runner.results_dir, f"{username}_langs_basic.svg")
@@ -184,19 +182,27 @@ async def test_top_languages_advanced(runner):
     test_configs = [
         {
             "name": "light_theme",
-            "params": {"theme": "light", "title": "Languages (Light)"},
+            "params": {"theme": "light"},
         },
         {
             "name": "small_chart",
-            "params": {"width": 250, "height": 200, "limit": 3, "title": "Top 3"},
+            "params": {"width": 250, "height": 200, "languages_count": 3},
         },
         {
             "name": "large_chart",
-            "params": {"width": 600, "height": 400, "limit": 10, "title": "Top 10"},
+            "params": {"width": 600, "height": 400, "languages_count": 10},
         },
         {
-            "name": "no_percentages",
-            "params": {"show_percentages": False, "title": "Clean View"},
+            "name": "no_decimal",
+            "params": {"decimal_places": 0},
+        },
+        {
+            "name": "with_other",
+            "params": {"languages_count": 3, "count_other_languages": True, "decimal_places": 2},
+        },
+        {
+            "name": "exclude_languages",
+            "params": {"exclude_languages": ["JavaScript", "HTML"], "languages_count": 5},
         }
     ]
     
@@ -307,7 +313,7 @@ async def test_performance(runner):
         await create_top_languages_svg(
             username=username,
             theme="dark",
-            limit=5
+            languages_count=5
         )
         langs_time = time.time() - start_time
         

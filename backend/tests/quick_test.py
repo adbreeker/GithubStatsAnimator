@@ -50,7 +50,7 @@ async def quick_test():
         svg = await create_top_languages_svg(
             username=username,
             theme="dark",
-            limit=5
+            languages_count=5
         )
         
         output_path = os.path.join(results_dir, f"quick_langs_{username}.svg")
