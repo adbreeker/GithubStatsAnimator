@@ -218,8 +218,8 @@ def create_language_bar_chart(languages: List[Tuple[str, float]], theme: str, wi
     min_dim = min(width, height)
     padding = max(15, min(min_dim * 0.1, 40))
     
-    # Title height based on available height
-    title_height = max(20, min(height * 0.12, 45))
+    # Title height with more space above - increase minimum and top margin
+    title_height = max(35, min(height * 0.15, 60))
     
     # Calculate available space
     chart_width = width - (2 * padding)
@@ -273,12 +273,20 @@ def create_language_bar_chart(languages: List[Tuple[str, float]], theme: str, wi
     border_radius = max(1, min(bar_height * 0.25, 8))
     svg_radius = max(3, min(min_dim * 0.02, 12))
     
-    # Start SVG with proper encoding declaration
+    # Start SVG with proper encoding declaration and animations
     svg = f'''<svg width="{width}" height="{height}" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+        <style>
+            .bar {{ transform-origin: left center; transform: scaleX(0); animation: growBar 1.5s ease-out forwards; }}
+            .text {{ opacity: 0; animation: fadeInText 0.8s ease-out forwards; }}
+            @keyframes growBar {{ from {{ transform: scaleX(0); }} to {{ transform: scaleX(1); }} }}
+            @keyframes fadeInText {{ from {{ opacity: 0; }} to {{ opacity: 1; }} }}
+        </style>
+    </defs>
     <rect width="{width}" height="{height}" fill="{colors['bg_color']}" stroke="{colors['border_color']}" rx="{svg_radius}"/>
     
     <!-- Title -->
-    <text x="{width/2}" y="{title_height * 0.6}" text-anchor="middle" fill="{colors['title_color']}" 
+    <text x="{width/2}" y="{title_height * 0.7}" text-anchor="middle" fill="{colors['title_color']}" 
           font-family="-apple-system,BlinkMacSystemFont,Segoe UI,Helvetica,Arial,sans-serif" 
           font-size="{title_font_size}" font-weight="600">Most Used Languages</text>
     '''
@@ -291,9 +299,11 @@ def create_language_bar_chart(languages: List[Tuple[str, float]], theme: str, wi
           font-size="{empty_font_size}">No language data available</text>
     '''
     else:
-        # Calculate starting position to center the content vertically
+        # Calculate starting position to center the content vertically with equal spacing
         total_content_height = (bar_height * len(languages)) + (bar_spacing * max(0, len(languages) - 1))
-        y_start = title_height + padding + max(0, (chart_height - total_content_height) / 2)
+        available_space_for_chart = height - title_height - (2 * padding)
+        vertical_margin = max(0, (available_space_for_chart - total_content_height) / 2)
+        y_start = title_height + padding + vertical_margin
         
         max_percentage = max(lang[1] for lang in languages)
         
@@ -304,43 +314,92 @@ def create_language_bar_chart(languages: List[Tuple[str, float]], theme: str, wi
             # Ensure minimum bar width for visibility
             bar_width = max(bar_width, 2)
             
+            # Calculate animation delays - bars grow first, then text appears sequentially
+            bar_delay = i * 0.15  # 150ms delay between each bar (faster)
+            text_delay = 1.5 + (i * 0.3)  # Text starts after bars finish (1.5s) + sequential delay
+            
             # Get language color
             if language == "Other":
                 lang_color = "#858585"
             else:
                 lang_color = LANGUAGE_COLORS.get(language, DEFAULT_LANGUAGE_COLOR)
             
-            # Language bar
+            # Language bar with staggered animation
             svg += f'''
     <rect x="{padding}" y="{y}" width="{bar_width}" height="{bar_height}" 
-          fill="{lang_color}" rx="{border_radius}"/>
+          fill="{lang_color}" rx="{border_radius}" class="bar" 
+          style="animation-delay: {bar_delay}s;"/>
     '''
             
             # Calculate text positions to avoid overlaps
             text_y = y + bar_height/2 + language_font_size/3
             
-            # Language name - position after bar or at minimum distance
+            # Language name - always show full name, adjust position if needed
             language_x = padding + bar_width + text_gap
             
-            # Truncate language name if necessary - be more generous with space
-            available_name_width = width - language_x - percentage_width - padding - text_gap
-            char_width = language_font_size * 0.5  # More conservative character width estimate
-            max_chars = max(2, int(available_name_width / char_width))  # Minimum 2 characters
+            # Always display the full language name without truncation
+            display_language = language
             
-            if len(language) > max_chars:
-                display_language = language[:max_chars-1] + "…"
+            # Calculate character width for positioning
+            char_width = language_font_size * 0.5
+            
+            # Special handling for top language with emojis
+            if i == 0:
+                # Calculate emoji text width (much wider than regular text)
+                emoji_text = f"🏆&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;{display_language}&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;🏆"
+                estimated_emoji_width = len(emoji_text) * char_width * 0.8  # Emojis are wider
+                
+                # Position emoji text to fit within graph bounds
+                max_x_for_emoji = width - padding - percentage_width - text_gap
+                if language_x + estimated_emoji_width > max_x_for_emoji:
+                    # Move text left to fit, but ensure it doesn't overlap with bar too much
+                    language_x = max(padding + bar_width * 0.5, max_x_for_emoji - estimated_emoji_width)
             else:
-                display_language = language
+                # Regular positioning logic for non-emoji text
+                available_name_width = width - language_x - percentage_width - padding - text_gap
+                estimated_text_width = len(language) * char_width
+                
+                # If text is too wide, move it closer to the bar or use minimum position
+                if estimated_text_width > available_name_width:
+                    # Try positioning right after the bar with minimal gap
+                    min_gap = 5
+                    language_x = padding + bar_width + min_gap
+                    # If still doesn't fit, position at fixed location after padding
+                    available_name_width = width - language_x - percentage_width - padding - min_gap
+                    if estimated_text_width > available_name_width:
+                        # Use a fixed position that ensures percentage has space
+                        language_x = padding + max_bar_width * 0.6
             
             # Escape special characters for XML
             display_language = display_language.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;').replace('"', '&quot;').replace("'", '&#39;')
             
-            svg += f'''
+            # Special styling for the top language (first one)
+            if i == 0:
+                # Add winner emoji and outlined text for top language (using non-breaking spaces for SVG)
+                display_language_with_emoji = f"🏆&#160;&#160;&#160;&#160;&#160;{display_language}&#160;&#160;&#160;&#160;&#160;🏆"
+                svg += f'''
+    <!-- Top language outline (stroke) -->
+    <text x="{language_x}" y="{text_y}" 
+          fill="none" stroke="{colors['bg_color']}" stroke-width="3"
+          font-family="-apple-system,BlinkMacSystemFont,Segoe UI,Helvetica,Arial,sans-serif" 
+          font-size="{language_font_size}" font-weight="600" class="text"
+          style="animation-delay: {text_delay}s;">{display_language_with_emoji}</text>
+    <!-- Top language text (fill) -->
+    <text x="{language_x}" y="{text_y}" 
+          fill="{colors['text_color']}" 
+          font-family="-apple-system,BlinkMacSystemFont,Segoe UI,Helvetica,Arial,sans-serif" 
+          font-size="{language_font_size}" font-weight="600" class="text"
+          style="animation-delay: {text_delay}s;">{display_language_with_emoji}</text>
+    '''
+            else:
+                # Regular styling for other languages
+                svg += f'''
     <!-- Language name -->
     <text x="{language_x}" y="{text_y}" 
           fill="{colors['text_color']}" 
           font-family="-apple-system,BlinkMacSystemFont,Segoe UI,Helvetica,Arial,sans-serif" 
-          font-size="{language_font_size}" font-weight="500">{display_language}</text>
+          font-size="{language_font_size}" font-weight="500" class="text"
+          style="animation-delay: {text_delay}s;">{display_language}</text>
     '''
             
             # Format percentage
@@ -357,7 +416,8 @@ def create_language_bar_chart(languages: List[Tuple[str, float]], theme: str, wi
     <text x="{percentage_x}" y="{text_y}" text-anchor="end"
           fill="{colors['subtitle_color']}" 
           font-family="-apple-system,BlinkMacSystemFont,Segoe UI,Helvetica,Arial,sans-serif" 
-          font-size="{percentage_font_size}">{percentage_text}</text>
+          font-size="{percentage_font_size}" class="text"
+          style="animation-delay: {text_delay}s;">{percentage_text}</text>
     '''
     
     svg += '</svg>'
