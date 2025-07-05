@@ -1,28 +1,27 @@
 """
-Contribution Graph API Handler
-Handles all endpoints related to GitHub contribution graph generation
+Top Languages API Handler
+Handles endpoints related to GitHub top languages visualization
 """
 from flask import request, jsonify, Response
 import asyncio
 import os
-from utils.contributions_graph_generator import generate_contributions_svg
+from utils.top_languages_generator import create_top_languages_svg
 
-def register_contributions_graph_routes(app):
-    """Register contributions graph related routes"""
-
-    @app.route('/api/contributions-graph', methods=['GET'])
-    def get_contribution_graph():
+def register_top_languages_routes(app):
+    """Register top languages related routes"""
+    
+    @app.route('/api/top-languages', methods=['GET'])
+    def get_top_languages():
         """
-        Generate animated GitHub contributions graph SVG
+        Generate GitHub top languages SVG chart
         
         Query Parameters:
         - theme (optional): 'light' or 'dark', default 'dark'
-        - text (optional): Text to animate, default 'ADBREEKER'
-        - animation_time (optional): Animation duration in seconds, default 8.0
-        - pause_time (optional): Pause between cycles in seconds, default 0.0
-        - line_color (optional): Hex color for eating lines, default '#ff8c00'
-        - line_alpha (optional): Line transparency 0.0-1.0, default 0.7
-        - square_size (optional): Square size in pixels, default 11
+        - limit (optional): Number of languages to show, default 5
+        - width (optional): SVG width in pixels, default 400
+        - height (optional): SVG height in pixels, default 300
+        - show_percentages (optional): Show percentage labels, default true
+        - title (optional): Custom title, default 'Most Used Languages'
         
         Note: GitHub username is read from environment variables (GITHUB_USERNAME)
         """
@@ -38,12 +37,11 @@ def register_contributions_graph_routes(app):
             
             # Get optional parameters with defaults
             theme = request.args.get('theme', 'dark')
-            text = request.args.get('text', 'ADBREEKER')
-            animation_time = float(request.args.get('animation_time', 8.0))
-            pause_time = float(request.args.get('pause_time', 0.0))
-            line_color = request.args.get('line_color', '#ff8c00')
-            line_alpha = float(request.args.get('line_alpha', 0.7))
-            square_size = int(request.args.get('square_size', 11))
+            limit = int(request.args.get('limit', 5))
+            width = int(request.args.get('width', 400))
+            height = int(request.args.get('height', 300))
+            show_percentages = request.args.get('show_percentages', 'true').lower() == 'true'
+            title = request.args.get('title', 'Most Used Languages')
             
             # Validate parameters
             if theme not in ['light', 'dark']:
@@ -53,38 +51,37 @@ def register_contributions_graph_routes(app):
                     "provided": theme
                 }), 400
             
-            if not (0.0 <= line_alpha <= 1.0):
+            if not (1 <= limit <= 20):
                 return jsonify({
-                    "error": "Invalid line_alpha",
-                    "message": "line_alpha must be between 0.0 and 1.0",
-                    "provided": line_alpha
+                    "error": "Invalid limit",
+                    "message": "Limit must be between 1 and 20",
+                    "provided": limit
                 }), 400
             
-            if not (1 <= square_size <= 50):
+            if not (200 <= width <= 1000):
                 return jsonify({
-                    "error": "Invalid square_size", 
-                    "message": "square_size must be between 1 and 50 pixels",
-                    "provided": square_size
+                    "error": "Invalid width",
+                    "message": "Width must be between 200 and 1000 pixels",
+                    "provided": width
                 }), 400
             
-            if not line_color.startswith('#') or len(line_color) not in [4, 7]:
+            if not (150 <= height <= 800):
                 return jsonify({
-                    "error": "Invalid line_color",
-                    "message": "line_color must be a valid hex color (e.g., #ff8c00 or #f80)",
-                    "provided": line_color
+                    "error": "Invalid height",
+                    "message": "Height must be between 150 and 800 pixels",
+                    "provided": height
                 }), 400
             
             # Generate SVG asynchronously
             try:
-                svg_content = asyncio.run(generate_contributions_svg(
+                svg_content = asyncio.run(create_top_languages_svg(
                     username=username,
                     theme=theme,
-                    text=text,
-                    line_color=line_color,
-                    line_alpha=line_alpha,
-                    square_size=square_size,
-                    animation_time=animation_time,
-                    pause_time=pause_time
+                    limit=limit,
+                    width=width,
+                    height=height,
+                    show_percentages=show_percentages,
+                    title=title
                 ))
                 
                 # Return SVG with proper content type
@@ -92,7 +89,7 @@ def register_contributions_graph_routes(app):
                     svg_content,
                     mimetype='image/svg+xml',
                     headers={
-                        'Content-Disposition': f'inline; filename="{username}_contributions.svg"',
+                        'Content-Disposition': f'inline; filename="{username}_top_languages.svg"',
                         'Cache-Control': 'no-cache'
                     }
                 )

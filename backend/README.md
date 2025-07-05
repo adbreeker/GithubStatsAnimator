@@ -99,9 +99,37 @@ GET /api/contribution-graph?theme=light&text=HELLO
 GET /api/contribution-graph?theme=dark&text=CODE&line_color=%23ff0000&line_alpha=0.9&square_size=12&animation_time=10.0&pause_time=2.0
 ```
 
+### GET /api/top-languages
+Generates a GitHub top languages SVG chart.
+
+**Parameters:**
+- `theme` (optional): `light` or `dark` (default: `dark`)
+- `limit` (optional): Number of languages to show (default: `5`, max: `20`)
+- `width` (optional): SVG width in pixels (default: `400`, range: `200-1000`)
+- `height` (optional): SVG height in pixels (default: `300`, range: `150-800`)
+- `show_percentages` (optional): Show percentage labels (default: `true`)
+- `title` (optional): Custom title (default: `Most Used Languages`)
+
+**Note:** GitHub username is automatically read from the `GITHUB_USERNAME` environment variable.
+
+**Example URLs:**
+```
+# Basic usage
+GET /api/top-languages
+
+# Custom size and theme
+GET /api/top-languages?theme=light&width=500&height=400
+
+# Show more languages with custom title
+GET /api/top-languages?limit=8&title=My%20Programming%20Languages
+
+# Full customization
+GET /api/top-languages?theme=dark&limit=10&width=600&height=500&show_percentages=false&title=Code%20Distribution
+```
+
 **Response:**
 - Content-Type: `image/svg+xml`
-- Returns animated SVG content
+- Returns SVG chart showing top programming languages with percentages
 
 ## Architecture
 
@@ -154,7 +182,7 @@ python test_setup.py
 4. Update this README
 
 ### Environment Variables
-- `GITHUB_TOKEN` or `PAT_1`: GitHub personal access token
+- `GITHUB_TOKEN`: GitHub personal access token
 - `GITHUB_USERNAME`: Default GitHub username
 - `DEBUG`: Enable debug mode (True/False)
 - `PORT`: Server port (default: 5000)

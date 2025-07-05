@@ -448,7 +448,7 @@ async def generate_contributions_svg(username: str, theme: str = "light", text: 
                   font-size="14" font-weight="600">GitHub Token Error</text>
             <text x="250" y="55" text-anchor="middle" fill="#586069" 
                   font-family="-apple-system,BlinkMacSystemFont,Segoe UI,Helvetica,Arial,sans-serif" 
-                  font-size="12">Set GITHUB_TOKEN or PAT_1 environment variable</text>
+                  font-size="12">Set GITHUB_TOKEN environment variable</text>
             <text x="250" y="75" text-anchor="middle" fill="#586069" 
                   font-family="-apple-system,BlinkMacSystemFont,Segoe UI,Helvetica,Arial,sans-serif" 
                   font-size="11">Create token at github.com/settings/tokens</text>

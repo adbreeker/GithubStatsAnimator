@@ -59,6 +59,7 @@ coverage.xml
 *.cover
 *.py,cover
 .hypothesis/
+tests/results/
 
 # Logs
 *.log
