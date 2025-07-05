@@ -36,7 +36,7 @@ async def quick_test():
         )
         
         output_path = os.path.join(results_dir, f"quick_contrib_{username}.svg")
-        with open(output_path, 'w') as f:
+        with open(output_path, 'w', encoding='utf-8') as f:
             f.write(svg)
         
         print(f"✅ Contribution graph: {len(svg):,} chars → tests/results/quick_contrib_{username}.svg")
@@ -54,7 +54,7 @@ async def quick_test():
         )
         
         output_path = os.path.join(results_dir, f"quick_langs_{username}.svg")
-        with open(output_path, 'w') as f:
+        with open(output_path, 'w', encoding='utf-8') as f:
             f.write(svg)
         
         # Check for errors

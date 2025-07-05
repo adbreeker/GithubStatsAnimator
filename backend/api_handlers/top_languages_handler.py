@@ -95,13 +95,14 @@ def register_top_languages_routes(app):
                     height=height
                 ))
                 
-                # Return SVG with proper content type
+                # Return SVG with proper content type and encoding
                 return Response(
                     svg_content,
                     mimetype='image/svg+xml',
                     headers={
                         'Content-Disposition': f'inline; filename="{username}_top_languages.svg"',
-                        'Cache-Control': 'no-cache'
+                        'Cache-Control': 'no-cache',
+                        'Content-Type': 'image/svg+xml; charset=utf-8'
                     }
                 )
                 

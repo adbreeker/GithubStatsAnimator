@@ -209,71 +209,155 @@ async def get_top_languages_graphql(username: str, languages_count: int = 5, exc
     return top_languages
 
 def create_language_bar_chart(languages: List[Tuple[str, float]], theme: str, width: int, height: int, decimal_places: int) -> str:
-    """Create SVG bar chart for languages"""
+    """Create responsive SVG bar chart for languages"""
     colors = THEMES[theme]
     title = "Most Used Languages"
     
-    # Calculate dimensions
-    padding = 40
-    title_height = 40
+    # Improved responsive calculations
+    # Base padding on smaller dimension to avoid extreme values
+    min_dim = min(width, height)
+    padding = max(15, min(min_dim * 0.1, 40))
+    
+    # Title height based on available height
+    title_height = max(20, min(height * 0.12, 45))
+    
+    # Calculate available space
     chart_width = width - (2 * padding)
     chart_height = height - (2 * padding) - title_height
-    bar_height = max(20, chart_height // len(languages) - 10) if languages else 20
     
-    # Start SVG
+    # Responsive font sizes with better constraints
+    title_font_size = max(10, min(min_dim * 0.06, 18))
+    language_font_size = max(8, min(min_dim * 0.04, 14))
+    percentage_font_size = max(7, min(min_dim * 0.035, 12))
+    
+    # Better text space calculation - ensure percentages have enough room
+    percentage_width = max(30, min(width * 0.12, 80))
+    text_gap = max(8, min(width * 0.02, 15))
+    
+    # Calculate bar dimensions with better spacing
+    if languages:
+        # Ensure minimum spacing between bars
+        min_bar_height = 8
+        min_spacing = max(2, min(height * 0.01, 8))
+        
+        # Calculate optimal bar height
+        available_height = chart_height
+        total_spacing = min_spacing * max(0, len(languages) - 1)
+        calculated_bar_height = (available_height - total_spacing) / len(languages)
+        
+        # Apply constraints
+        bar_height = max(min_bar_height, min(calculated_bar_height, height * 0.15))
+        
+        # Recalculate spacing if bars are too small
+        if bar_height == min_bar_height:
+            remaining_space = available_height - (bar_height * len(languages))
+            bar_spacing = max(1, remaining_space / max(1, len(languages) - 1))
+        else:
+            bar_spacing = min_spacing
+            
+        # Ensure we don't exceed available height
+        total_used = (bar_height * len(languages)) + (bar_spacing * max(0, len(languages) - 1))
+        if total_used > available_height:
+            # Scale down proportionally
+            scale_factor = available_height / total_used
+            bar_height *= scale_factor
+            bar_spacing *= scale_factor
+    else:
+        bar_height = 20
+        bar_spacing = 10
+    
+    # Maximum bar width (leave space for text)
+    max_bar_width = chart_width - percentage_width - text_gap
+    
+    # Border radius based on bar height
+    border_radius = max(1, min(bar_height * 0.25, 8))
+    svg_radius = max(3, min(min_dim * 0.02, 12))
+    
+    # Start SVG with proper encoding declaration
     svg = f'''<svg width="{width}" height="{height}" xmlns="http://www.w3.org/2000/svg">
-    <rect width="{width}" height="{height}" fill="{colors['bg_color']}" stroke="{colors['border_color']}" rx="10"/>
+    <rect width="{width}" height="{height}" fill="{colors['bg_color']}" stroke="{colors['border_color']}" rx="{svg_radius}"/>
     
     <!-- Title -->
-    <text x="{width/2}" y="30" text-anchor="middle" fill="{colors['title_color']}" 
+    <text x="{width/2}" y="{title_height * 0.6}" text-anchor="middle" fill="{colors['title_color']}" 
           font-family="-apple-system,BlinkMacSystemFont,Segoe UI,Helvetica,Arial,sans-serif" 
-          font-size="16" font-weight="600">{title}</text>
+          font-size="{title_font_size}" font-weight="600">Most Used Languages</text>
     '''
     
     if not languages:
+        empty_font_size = max(10, min(min_dim * 0.05, 16))
         svg += f'''
     <text x="{width/2}" y="{height/2}" text-anchor="middle" fill="{colors['subtitle_color']}" 
           font-family="-apple-system,BlinkMacSystemFont,Segoe UI,Helvetica,Arial,sans-serif" 
-          font-size="14">No language data available</text>
+          font-size="{empty_font_size}">No language data available</text>
     '''
     else:
-        # Add language bars
-        y_start = title_height + padding
+        # Calculate starting position to center the content vertically
+        total_content_height = (bar_height * len(languages)) + (bar_spacing * max(0, len(languages) - 1))
+        y_start = title_height + padding + max(0, (chart_height - total_content_height) / 2)
+        
         max_percentage = max(lang[1] for lang in languages)
         
         for i, (language, percentage) in enumerate(languages):
-            y = y_start + (i * (bar_height + 10))
-            bar_width = (percentage / max_percentage) * (chart_width - 100)
+            y = y_start + (i * (bar_height + bar_spacing))
+            bar_width = (percentage / max_percentage) * max_bar_width
+            
+            # Ensure minimum bar width for visibility
+            bar_width = max(bar_width, 2)
             
             # Get language color
             if language == "Other":
-                lang_color = "#858585"  # Gray for "Other" category
+                lang_color = "#858585"
             else:
                 lang_color = LANGUAGE_COLORS.get(language, DEFAULT_LANGUAGE_COLOR)
             
             # Language bar
             svg += f'''
     <rect x="{padding}" y="{y}" width="{bar_width}" height="{bar_height}" 
-          fill="{lang_color}" rx="3"/>
-    
-    <!-- Language name -->
-    <text x="{padding + bar_width + 10}" y="{y + bar_height/2 + 4}" 
-          fill="{colors['text_color']}" 
-          font-family="-apple-system,BlinkMacSystemFont,Segoe UI,Helvetica,Arial,sans-serif" 
-          font-size="12" font-weight="500">{language}</text>
+          fill="{lang_color}" rx="{border_radius}"/>
     '''
             
-            # Format percentage based on decimal places
+            # Calculate text positions to avoid overlaps
+            text_y = y + bar_height/2 + language_font_size/3
+            
+            # Language name - position after bar or at minimum distance
+            language_x = padding + bar_width + text_gap
+            
+            # Truncate language name if necessary - be more generous with space
+            available_name_width = width - language_x - percentage_width - padding - text_gap
+            char_width = language_font_size * 0.5  # More conservative character width estimate
+            max_chars = max(2, int(available_name_width / char_width))  # Minimum 2 characters
+            
+            if len(language) > max_chars:
+                display_language = language[:max_chars-1] + "…"
+            else:
+                display_language = language
+            
+            # Escape special characters for XML
+            display_language = display_language.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;').replace('"', '&quot;').replace("'", '&#39;')
+            
+            svg += f'''
+    <!-- Language name -->
+    <text x="{language_x}" y="{text_y}" 
+          fill="{colors['text_color']}" 
+          font-family="-apple-system,BlinkMacSystemFont,Segoe UI,Helvetica,Arial,sans-serif" 
+          font-size="{language_font_size}" font-weight="500">{display_language}</text>
+    '''
+            
+            # Format percentage
             if decimal_places == 0:
                 percentage_text = f"{percentage:.0f}%"
             else:
                 percentage_text = f"{percentage:.{decimal_places}f}%"
-                
+            
+            # Percentage position - always at the right edge
+            percentage_x = width - padding
+            
             svg += f'''
-    <text x="{width - padding}" y="{y + bar_height/2 + 4}" text-anchor="end"
+    <!-- Percentage -->
+    <text x="{percentage_x}" y="{text_y}" text-anchor="end"
           fill="{colors['subtitle_color']}" 
           font-family="-apple-system,BlinkMacSystemFont,Segoe UI,Helvetica,Arial,sans-serif" 
-          font-size="11">{percentage_text}</text>
+          font-size="{percentage_font_size}">{percentage_text}</text>
     '''
     
     svg += '</svg>'
