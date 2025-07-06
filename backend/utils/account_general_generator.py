@@ -350,17 +350,17 @@ async def get_icon_svg(icon_type: str, username: str, theme: str, x: int = 420, 
         return f'''<g transform="translate({x}, {y})">
             <defs>
                 <radialGradient id="{streak_id}" cx="50%" cy="40%" r="60%">
-                    <stop offset="0%" style="stop-color:#fff5e6"/>
-                    <stop offset="40%" style="stop-color:#ffb366"/>
-                    <stop offset="80%" style="stop-color:#ff8c42"/>
-                    <stop offset="100%" style="stop-color:#d63031"/>
+                    <stop offset="0%" style="stop-color:#2d1810"/>
+                    <stop offset="40%" style="stop-color:#8b4513"/>
+                    <stop offset="80%" style="stop-color:#cd853f"/>
+                    <stop offset="100%" style="stop-color:#daa520"/>
                 </radialGradient>
             </defs>
             
-            <!-- Milky orange gradient background -->
+            <!-- Matte streak-themed gradient background -->
             <circle cx="{size//2}" cy="{size//2}" r="{radius}" 
                     fill="url(#{streak_id})" 
-                    stroke="#ff8c42" 
+                    stroke="{colors['text_secondary']}" 
                     stroke-width="2"/>
             
             <!-- Fire emoji -->
@@ -558,17 +558,17 @@ async def create_account_general_svg(
             icon_svg = f'''<g transform="translate({icon_x}, {icon_y})">
                 <defs>
                     <radialGradient id="{streak_id}" cx="50%" cy="40%" r="60%">
-                        <stop offset="0%" style="stop-color:#fff5e6"/>
-                        <stop offset="40%" style="stop-color:#ffb366"/>
-                        <stop offset="80%" style="stop-color:#ff8c42"/>
-                        <stop offset="100%" style="stop-color:#d63031"/>
+                        <stop offset="0%" style="stop-color:#2d1810"/>
+                        <stop offset="40%" style="stop-color:#8b4513"/>
+                        <stop offset="80%" style="stop-color:#cd853f"/>
+                        <stop offset="100%" style="stop-color:#daa520"/>
                     </radialGradient>
                 </defs>
                 
-                <!-- Milky orange gradient background -->
+                <!-- Matte streak-themed gradient background -->
                 <circle cx="{icon_size//2}" cy="{icon_size//2}" r="{radius}" 
                         fill="url(#{streak_id})" 
-                        stroke="#ff8c42" 
+                        stroke="{colors['text_secondary']}" 
                         stroke-width="2"/>
                 
                 <!-- Fire emoji -->
