@@ -74,7 +74,7 @@ async def quick_test():
         svg = await create_account_general_svg(
             username=username,
             theme="dark",
-            icon="default",
+            icon="default+streak",
             slots=['stars', 'commits_total', 'commits_year', 'pull_requests', 'issues']
         )
         

@@ -303,7 +303,7 @@ def format_number(num: int) -> str:
     else:
         return str(num)
 
-async def get_icon_svg(icon_type: str, username: str, theme: str, x: int = 420, y: int = 80, avatar_url: str = None, size: int = 80) -> str:
+async def get_icon_svg(icon_type: str, username: str, theme: str, x: int = 420, y: int = 80, avatar_url: str = None, size: int = 80, streak_value: int = 0) -> str:
     """Generate SVG for different icon types"""
     
     colors = THEMES[theme]
@@ -344,14 +344,40 @@ async def get_icon_svg(icon_type: str, username: str, theme: str, x: int = 420, 
                 <text x="{size//2}" y="{size-8}" text-anchor="middle" fill="{colors['bg']}" font-size="{max(8, size//10)}" font-weight="bold" font-family="'Segoe UI', sans-serif">{username[:3].upper()}</text>
             </g>'''
     elif icon_type == "streak":
-        # Streak icon (fire emoji style) - responsive
-        scale = size / 80
+        # Streak icon with milky orange gradient and real fire emoji
+        streak_id = f"streak-gradient-{username}"
+        
         return f'''<g transform="translate({x}, {y})">
-            <circle cx="{size//2}" cy="{size//2}" r="{radius}" fill="{colors['warning']}" stroke="{colors['text_secondary']}" stroke-width="2"/>
-            <g transform="translate({size//2-10*scale}, {size//2-15*scale}) scale({scale})">
-                <path d="M10 8c-2 4-6 6-6 10 0 3.5 2.5 6 6 6s6-2.5 6-6c0-4-4-6-6-10z" fill="{colors['bg']}" stroke="{colors['text_primary']}" stroke-width="1"/>
-            </g>
-            <circle cx="{size//2}" cy="{size//2}" r="{max(4, size//15)}" fill="{colors['warning']}"/>
+            <defs>
+                <radialGradient id="{streak_id}" cx="50%" cy="40%" r="60%">
+                    <stop offset="0%" style="stop-color:#fff5e6"/>
+                    <stop offset="40%" style="stop-color:#ffb366"/>
+                    <stop offset="80%" style="stop-color:#ff8c42"/>
+                    <stop offset="100%" style="stop-color:#d63031"/>
+                </radialGradient>
+            </defs>
+            
+            <!-- Milky orange gradient background -->
+            <circle cx="{size//2}" cy="{size//2}" r="{radius}" 
+                    fill="url(#{streak_id})" 
+                    stroke="#ff8c42" 
+                    stroke-width="2"/>
+            
+            <!-- Fire emoji -->
+            <text x="{size//2}" y="{size//2}" 
+                  text-anchor="middle" 
+                  font-size="{size//1.5}" 
+                  style="dominant-baseline: central;">🔥</text>
+                  
+            <!-- Streak number centered in icon with better outline -->
+            <text x="{size//2}" y="{size//2 + 8}" 
+                  text-anchor="middle" 
+                  fill="#ffffff" 
+                  font-size="{max(12, size//6)}" 
+                  font-weight="900" 
+                  font-family="'Segoe UI', sans-serif"
+                  stroke="#333333" 
+                  stroke-width="0.5">{streak_value}</text>
         </g>'''
     else:
         return ""
@@ -360,8 +386,8 @@ async def create_rotating_icon_svg(icon1: str, icon2: str, username: str, theme:
     """Create a rotating coin-like icon with two sides (Y-axis flip like a coin)"""
     
     # Get the two different icon SVGs
-    icon1_content = await get_icon_svg(icon1, username, theme, 0, 0, avatar_url, size)  # Position at 0,0 for relative positioning
-    icon2_content = await get_icon_svg(icon2, username, theme, 0, 0, avatar_url, size)
+    icon1_content = await get_icon_svg(icon1, username, theme, 0, 0, avatar_url, size, 0)  # Position at 0,0 for relative positioning
+    icon2_content = await get_icon_svg(icon2, username, theme, 0, 0, avatar_url, size, 0)
     
     return f'''<g transform="translate({x}, {y})">
         <g class="coin-container">
@@ -525,15 +551,44 @@ async def create_account_general_svg(
     else:
         # Single icon - fixed optimal size
         if icon == "streak":
-            # For streak icon, we need to display the actual streak number
+            # For streak icon with fire emoji and number inside
+            streak_id = f"streak-gradient-{username}"
             radius = icon_size // 2 - 5
+            
             icon_svg = f'''<g transform="translate({icon_x}, {icon_y})">
-                <circle cx="{icon_size//2}" cy="{icon_size//2}" r="{radius}" fill="{colors['warning']}" stroke="{colors['border']}" stroke-width="2"/>
-                <text x="{icon_size//2}" y="{icon_size//2 - 8}" text-anchor="middle" fill="{colors['bg']}" font-size="12" font-weight="bold" font-family="'Segoe UI', sans-serif">Streak</text>
-                <text x="{icon_size//2}" y="{icon_size//2 + 8}" text-anchor="middle" fill="{colors['bg']}" font-size="16" font-weight="bold" font-family="'Segoe UI', sans-serif">{streak}</text>
+                <defs>
+                    <radialGradient id="{streak_id}" cx="50%" cy="40%" r="60%">
+                        <stop offset="0%" style="stop-color:#fff5e6"/>
+                        <stop offset="40%" style="stop-color:#ffb366"/>
+                        <stop offset="80%" style="stop-color:#ff8c42"/>
+                        <stop offset="100%" style="stop-color:#d63031"/>
+                    </radialGradient>
+                </defs>
+                
+                <!-- Milky orange gradient background -->
+                <circle cx="{icon_size//2}" cy="{icon_size//2}" r="{radius}" 
+                        fill="url(#{streak_id})" 
+                        stroke="#ff8c42" 
+                        stroke-width="2"/>
+                
+                <!-- Fire emoji -->
+                <text x="{icon_size//2}" y="{icon_size//2}" 
+                      text-anchor="middle" 
+                      font-size="{icon_size//1.5}" 
+                      style="dominant-baseline: central;">🔥</text>
+                      
+                <!-- Streak number centered in the icon with better outline -->
+                <text x="{icon_size//2}" y="{icon_size//2 + 8}" 
+                      text-anchor="middle" 
+                      fill="#ffffff" 
+                      font-size="{max(12, icon_size//6)}" 
+                      font-weight="900" 
+                      font-family="'Segoe UI', sans-serif"
+                      stroke="#333333" 
+                      stroke-width="0.5">{streak}</text>
             </g>'''
         else:
-            icon_svg = await get_icon_svg(icon, username, theme, icon_x, icon_y, avatar_url, icon_size)
+            icon_svg = await get_icon_svg(icon, username, theme, icon_x, icon_y, avatar_url, icon_size, streak)
     
     # Create stat items in single column - fixed optimal layout
     stat_items = []
