@@ -15,6 +15,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
 from utils.contributions_graph_generator import generate_contributions_svg
 from utils.top_languages_generator import create_top_languages_svg
+from utils.account_general_generator import create_account_general_svg
 
 async def quick_test():
     """Quick test of both SVG generators"""
@@ -66,6 +67,30 @@ async def quick_test():
         
     except Exception as e:
         print(f"❌ Top languages failed: {e}")
+    
+    # Test 3: Account general stats
+    print("\n3️⃣ Testing account general stats...")
+    try:
+        svg = await create_account_general_svg(
+            username=username,
+            theme="dark",
+            icon="default",
+            slots=['stars', 'commits_total', 'commits_year', 'pull_requests', 'issues']
+        )
+        
+        output_path = os.path.join(results_dir, f"quick_account_{username}.svg")
+        with open(output_path, 'w', encoding='utf-8') as f:
+            f.write(svg)
+        
+        # Check for errors
+        if "error" in svg.lower():
+            print(f"⚠️ Account general: Possible error in output")
+            print("First 200 chars:", svg[:200])
+        else:
+            print(f"✅ Account general: {len(svg):,} chars → tests/results/quick_account_{username}.svg")
+        
+    except Exception as e:
+        print(f"❌ Account general failed: {e}")
     
     print("\n🎯 Quick test complete!")
 

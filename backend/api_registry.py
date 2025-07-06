@@ -4,6 +4,7 @@ Central place to register all API routes
 """
 from api_handlers.contributions_graph_handler import register_contributions_graph_routes
 from api_handlers.top_languages_handler import register_top_languages_routes
+from api_handlers.account_general_handler import register_account_general_routes
 
 def register_all_routes(app):
     """Register all API routes with the Flask app"""
@@ -13,6 +14,9 @@ def register_all_routes(app):
     
     # Register top languages routes
     register_top_languages_routes(app)
+    
+    # Register account general routes
+    register_account_general_routes(app)
     
     # Health check endpoint
     @app.route('/health', methods=['GET'])
@@ -53,6 +57,23 @@ def register_all_routes(app):
                         "exclude_languages": "Comma-separated list of languages to exclude (default: empty)",
                         "width": "SVG width in pixels 200-1000 (default: 400)",
                         "height": "SVG height in pixels 150-800 (default: 300)"
+                    },
+                    "note": "GitHub username is read from GITHUB_USERNAME environment variable"
+                },
+                {
+                    "path": "/api/account-general", 
+                    "method": "GET",
+                    "description": "Generate GitHub account general stats SVG",
+                    "parameters": {
+                        "theme": "light or dark (default: dark)",
+                        "icon": "default, github, streak, or combinations like 'default+github' (default: default)",
+                        "slot1": "stars, commits_total, commits_year, pull_requests, code_reviews, issues, external_contributions (default: stars)",
+                        "slot2": "Same options as slot1 (default: commits_total)",
+                        "slot3": "Same options as slot1 (default: commits_year)",
+                        "slot4": "Same options as slot1 (default: pull_requests)",
+                        "slot5": "Same options as slot1 (default: issues)",
+                        "width": "SVG width in pixels 200-1000 (default: 500)",
+                        "height": "SVG height in pixels 150-800 (default: 200)"
                     },
                     "note": "GitHub username is read from GITHUB_USERNAME environment variable"
                 }
