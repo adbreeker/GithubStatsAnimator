@@ -38,19 +38,5 @@
       "src": "/(.*)",
       "dest": "/frontend/dist/index.html"
     }
-  ],
-  "functions": {
-    "api/health.py": {
-      "runtime": "python3.9"
-    },
-    "api/contributions-graph.py": {
-      "runtime": "python3.9"
-    },
-    "api/top-languages.py": {
-      "runtime": "python3.9"
-    },
-    "api/account-general.py": {
-      "runtime": "python3.9"
-    }
-  }
+  ]
 }
