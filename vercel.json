@@ -7,9 +7,41 @@
       "config": {
         "distDir": "frontend/dist"
       }
+    },
+    {
+      "src": "api/health.py",
+      "use": "@vercel/python"
+    },
+    {
+      "src": "api/account-general.py",
+      "use": "@vercel/python"
+    },
+    {
+      "src": "api/top-languages.py",
+      "use": "@vercel/python"
+    },
+    {
+      "src": "api/contributions-graph.py",
+      "use": "@vercel/python"
+    },
+    {
+      "src": "api/test.py",
+      "use": "@vercel/python"
+    },
+    {
+      "src": "api/minimal.py",
+      "use": "@vercel/python"
     }
   ],
   "routes": [
+    {
+      "src": "/api/test",
+      "dest": "/api/test.py"
+    },
+    {
+      "src": "/api/minimal",
+      "dest": "/api/minimal.py"
+    },
     {
       "src": "/api/health",
       "dest": "/api/health.py"
