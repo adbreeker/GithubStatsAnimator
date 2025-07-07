@@ -25,13 +25,13 @@ const StatsPreview = ({ selectedStatsType, config }) => {
   const hasConfiguration = () => {
     switch (selectedStatsType) {
       case 'Account General':
-        return config.slots?.some(slot => slot !== 'none') || config.icon !== 'none';
+        return config.slots?.some(slot => slot !== 'none') || config.icon !== 'default';
       case 'Top Languages':
-        return config.languagesCount > 0 || config.excludedLanguages?.length > 0;
+        return config.languages_count > 0 || config.exclude_languages?.length > 0;
       case 'Repositories':
         return config.repositorySlots?.some(slot => slot.type !== 'none');
       case 'Contributions Graph':
-        return config.animationTime > 0 || config.text !== '';
+        return config.animation_time > 0 || config.text !== '';
       default:
         return false;
     }
@@ -39,7 +39,7 @@ const StatsPreview = ({ selectedStatsType, config }) => {
 
   const renderAccountGeneralPreview = () => {
     const activeSlots = config.slots?.filter(slot => slot !== 'none') || [];
-    const hasIcon = config.icon !== 'none';
+    const hasIcon = config.icon !== 'default';
 
     return (
       <div className={styles.mockProfile}>
@@ -48,9 +48,12 @@ const StatsPreview = ({ selectedStatsType, config }) => {
           <div className={styles.mockUsername}>username</div>
           <div className={styles.mockStats}>
             {activeSlots.map((slot, index) => (
-              <span key={index}>� {slot}: 123</span>
+              <span key={index}>🔸 {slot.replace(/_/g, ' ')}: 123</span>
             ))}
-            {hasIcon && <span>� {config.icon}</span>}
+            {hasIcon && <span>🔸 {config.icon}</span>}
+            <div style={{marginTop: '8px', fontSize: '12px', color: '#888'}}>
+              {config.width || 500}×{config.height || 200}px
+            </div>
           </div>
         </div>
       </div>
@@ -59,8 +62,8 @@ const StatsPreview = ({ selectedStatsType, config }) => {
 
   const renderTopLanguagesPreview = () => {
     const languages = ['JavaScript', 'Python', 'TypeScript', 'Java', 'C++'];
-    const displayCount = Math.min(config.languagesCount || 5, languages.length);
-    const decimals = config.percentageDecimals || 1;
+    const displayCount = Math.min(config.languages_count || 5, languages.length);
+    const decimals = config.decimal_places || 1;
 
     return (
       <div className={styles.mockLanguages}>
@@ -70,12 +73,15 @@ const StatsPreview = ({ selectedStatsType, config }) => {
             const percentage = (40 - index * 8).toFixed(decimals);
             return <span key={lang}>{lang} {percentage}%</span>;
           })}
-          {config.countOther && <span>Other 10.{decimals > 0 ? '0'.repeat(decimals) : ''}%</span>}
-          {config.excludedLanguages?.length > 0 && (
+          {config.count_other_languages && <span>Other 10.{decimals > 0 ? '0'.repeat(decimals) : ''}%</span>}
+          {config.exclude_languages?.length > 0 && (
             <div className={styles.excludedNote}>
-              Excluded: {config.excludedLanguages.join(', ')}
+              Excluded: {config.exclude_languages.join(', ')}
             </div>
           )}
+          <div style={{marginTop: '8px', fontSize: '12px', color: '#888'}}>
+            {config.width || 400}×{config.height || 300}px
+          </div>
         </div>
       </div>
     );
@@ -112,8 +118,8 @@ const StatsPreview = ({ selectedStatsType, config }) => {
     };
 
     const getColor = () => {
-      const color = config.linesColor || '#39d353';
-      const alpha = config.linesAlpha !== undefined ? config.linesAlpha : 1.0;
+      const color = config.line_color || '#ff8c00';
+      const alpha = config.line_alpha !== undefined ? config.line_alpha : 0.7;
       
       if (color.startsWith('#')) {
         return hexToRgba(color, alpha);
@@ -132,7 +138,9 @@ const StatsPreview = ({ selectedStatsType, config }) => {
               className={styles.mockContribDay}
               style={{
                 backgroundColor: getColor(),
-                opacity: Math.random() * 0.6 + 0.4 // Random opacity for visual variety
+                opacity: Math.random() * 0.6 + 0.4, // Random opacity for visual variety
+                width: `${Math.min(config.square_size || 11, 20)}px`,
+                height: `${Math.min(config.square_size || 11, 20)}px`
               }}
             ></div>
           ))}
@@ -141,7 +149,7 @@ const StatsPreview = ({ selectedStatsType, config }) => {
           <div className={styles.mockText}>{config.text}</div>
         )}
         <div className={styles.mockAnimationInfo}>
-          Animation: {config.animationTime || 2}s | Pause: {config.pauseTime || 1}s
+          Animation: {config.animation_time || 8}s | Pause: {config.pause_time || 0}s | Theme: {config.theme || 'dark'}
         </div>
       </div>
     );

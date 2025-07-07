@@ -2,15 +2,15 @@ import { useState, useEffect, useRef } from 'react';
 import styles from '../styles/statsAttributes.module.css';
 
 const StatsAttributes = ({ selectedStatsType, config, onConfigChange }) => {
-  const [excludedLanguages, setExcludedLanguages] = useState(config.excludedLanguages || []);
+  const [excludedLanguages, setExcludedLanguages] = useState(config.exclude_languages || []);
   const [showLanguageDropdown, setShowLanguageDropdown] = useState(false);
   const [dropdownPosition, setDropdownPosition] = useState('down');
   const dropdownRef = useRef(null);
 
   // Sync excludedLanguages with config changes
   useEffect(() => {
-    setExcludedLanguages(config.excludedLanguages || []);
-  }, [config.excludedLanguages]);
+    setExcludedLanguages(config.exclude_languages || []);
+  }, [config.exclude_languages]);
 
   // Close dropdown when stats type changes
   useEffect(() => {
@@ -42,22 +42,26 @@ const StatsAttributes = ({ selectedStatsType, config, onConfigChange }) => {
     }
   }, [showLanguageDropdown]);
 
-  // Common options for slots
+  // Common options for slots (updated to match API)
   const slotOptions = [
     'none',
-    'total stars',
-    'total commits',
-    'commits current year',
-    'total pull requests',
-    'total issues',
-    'external contributions'
+    'stars',
+    'commits_total',
+    'commits_year',
+    'pull_requests',
+    'code_reviews',
+    'issues',
+    'external_contributions'
   ];
 
   const iconOptions = [
-    'none',
-    'current streak',
-    'github logo',
-    'grade'
+    'default',
+    'github',
+    'streak',
+    'default+github',
+    'default+streak',
+    'github+streak',
+    'default+github+streak'
   ];
 
   const repositorySlotOptions = [
@@ -139,7 +143,7 @@ const StatsAttributes = ({ selectedStatsType, config, onConfigChange }) => {
     if (!excludedLanguages.includes(language)) {
       const newExcluded = [...excludedLanguages, language];
       setExcludedLanguages(newExcluded);
-      handleConfigUpdate('excludedLanguages', newExcluded);
+      handleConfigUpdate('exclude_languages', newExcluded);
     }
     setShowLanguageDropdown(false);
   };
@@ -147,7 +151,7 @@ const StatsAttributes = ({ selectedStatsType, config, onConfigChange }) => {
   const removeExcludedLanguage = (language) => {
     const newExcluded = excludedLanguages.filter(lang => lang !== language);
     setExcludedLanguages(newExcluded);
-    handleConfigUpdate('excludedLanguages', newExcluded);
+    handleConfigUpdate('exclude_languages', newExcluded);
   };
 
   // Custom NumberInput component
@@ -219,12 +223,31 @@ const StatsAttributes = ({ selectedStatsType, config, onConfigChange }) => {
     <div className={styles.configSection}>
       <h4 className={styles.sectionTitle}>Account General Configuration</h4>
       
+      {/* Theme */}
+      <div className={styles.configItem}>
+        <label className={styles.label}>Theme:</label>
+        <div className={styles.themeButtons}>
+          <button
+            className={`${styles.themeButton} ${(config.theme || 'dark') === 'dark' ? styles.active : ''}`}
+            onClick={() => handleConfigUpdate('theme', 'dark')}
+          >
+            Dark
+          </button>
+          <button
+            className={`${styles.themeButton} ${config.theme === 'light' ? styles.active : ''}`}
+            onClick={() => handleConfigUpdate('theme', 'light')}
+          >
+            Light
+          </button>
+        </div>
+      </div>
+
       {/* Icon */}
       <div className={styles.configItem}>
         <label className={styles.label}>Icon:</label>
         <select
           className={styles.select}
-          value={config.icon || 'none'}
+          value={config.icon || 'default'}
           onChange={(e) => handleConfigUpdate('icon', e.target.value)}
         >
           {iconOptions.map(option => (
@@ -239,11 +262,11 @@ const StatsAttributes = ({ selectedStatsType, config, onConfigChange }) => {
           <label className={styles.label}>Slot {slotNum}:</label>
           <select
             className={styles.select}
-            value={config.slots?.[slotNum - 1] || 'none'}
+            value={config.slots?.[slotNum - 1] || (slotNum === 1 ? 'stars' : slotNum === 2 ? 'commits_total' : slotNum === 3 ? 'commits_year' : slotNum === 4 ? 'pull_requests' : 'issues')}
             onChange={(e) => handleSlotUpdate(slotNum - 1, e.target.value)}
           >
             {slotOptions.map(option => (
-              <option key={option} value={option}>{option}</option>
+              <option key={option} value={option}>{option.replace(/_/g, ' ')}</option>
             ))}
           </select>
         </div>
@@ -255,29 +278,48 @@ const StatsAttributes = ({ selectedStatsType, config, onConfigChange }) => {
     <div className={styles.configSection}>
       <h4 className={styles.sectionTitle}>Top Languages Configuration</h4>
       
+      {/* Theme */}
+      <div className={styles.configItem}>
+        <label className={styles.label}>Theme:</label>
+        <div className={styles.themeButtons}>
+          <button
+            className={`${styles.themeButton} ${(config.theme || 'dark') === 'dark' ? styles.active : ''}`}
+            onClick={() => handleConfigUpdate('theme', 'dark')}
+          >
+            Dark
+          </button>
+          <button
+            className={`${styles.themeButton} ${config.theme === 'light' ? styles.active : ''}`}
+            onClick={() => handleConfigUpdate('theme', 'light')}
+          >
+            Light
+          </button>
+        </div>
+      </div>
+      
       {/* Languages count slider */}
       <div className={styles.configItem}>
-        <label className={styles.label}>Languages Count: {config.languagesCount || 5}</label>
+        <label className={styles.label}>Languages Count: {config.languages_count || 5}</label>
         <input
           type="range"
           className={styles.slider}
           min="1"
-          max="10"
-          value={config.languagesCount || 5}
-          onChange={(e) => handleConfigUpdate('languagesCount', parseInt(e.target.value))}
+          max="20"
+          value={config.languages_count || 5}
+          onChange={(e) => handleConfigUpdate('languages_count', parseInt(e.target.value))}
         />
       </div>
 
-      {/* Percentage floating point slider */}
+      {/* Decimal places slider */}
       <div className={styles.configItem}>
-        <label className={styles.label}>Percentage Decimal Places: {config.percentageDecimals ?? 1}</label>
+        <label className={styles.label}>Decimal Places: {config.decimal_places ?? 1}</label>
         <input
           type="range"
           className={styles.slider}
           min="0"
-          max="3"
-          value={config.percentageDecimals ?? 1}
-          onChange={(e) => handleConfigUpdate('percentageDecimals', parseInt(e.target.value))}
+          max="5"
+          value={config.decimal_places ?? 1}
+          onChange={(e) => handleConfigUpdate('decimal_places', parseInt(e.target.value))}
         />
       </div>
 
@@ -287,8 +329,8 @@ const StatsAttributes = ({ selectedStatsType, config, onConfigChange }) => {
           <input
             type="checkbox"
             className={styles.checkbox}
-            checked={config.countOther || false}
-            onChange={(e) => handleConfigUpdate('countOther', e.target.checked)}
+            checked={config.count_other_languages || false}
+            onChange={(e) => handleConfigUpdate('count_other_languages', e.target.checked)}
           />
           Count Other Languages
         </label>
@@ -332,6 +374,32 @@ const StatsAttributes = ({ selectedStatsType, config, onConfigChange }) => {
             )}
           </div>
         </div>
+      </div>
+
+      {/* Width */}
+      <div className={styles.configItem}>
+        <label className={styles.label}>Width: {config.width || 400}px</label>
+        <input
+          type="range"
+          className={styles.slider}
+          min="200"
+          max="1000"
+          value={config.width || 400}
+          onChange={(e) => handleConfigUpdate('width', parseInt(e.target.value))}
+        />
+      </div>
+
+      {/* Height */}
+      <div className={styles.configItem}>
+        <label className={styles.label}>Height: {config.height || 300}px</label>
+        <input
+          type="range"
+          className={styles.slider}
+          min="150"
+          max="800"
+          value={config.height || 300}
+          onChange={(e) => handleConfigUpdate('height', parseInt(e.target.value))}
+        />
       </div>
     </div>
   );
@@ -408,14 +476,26 @@ const StatsAttributes = ({ selectedStatsType, config, onConfigChange }) => {
         </div>
       </div>
 
+      {/* Text */}
+      <div className={styles.configItem}>
+        <label className={styles.label}>Text:</label>
+        <input
+          type="text"
+          className={styles.input}
+          placeholder="Text to animate (default: ADBREEKER)"
+          value={config.text || ''}
+          onChange={(e) => handleConfigUpdate('text', e.target.value)}
+        />
+      </div>
+
       {/* Animation time */}
       <div className={styles.configItem}>
         <label className={styles.label}>Animation Time (seconds):</label>
         <NumberInput
           min="0.1"
           step="0.1"
-          value={config.animationTime || 2.0}
-          onChange={(e) => handleConfigUpdate('animationTime', parseFloat(e.target.value))}
+          value={config.animation_time || 8.0}
+          onChange={(e) => handleConfigUpdate('animation_time', parseFloat(e.target.value))}
         />
       </div>
 
@@ -423,26 +503,14 @@ const StatsAttributes = ({ selectedStatsType, config, onConfigChange }) => {
       <div className={styles.configItem}>
         <label className={styles.label}>Pause Time (seconds):</label>
         <NumberInput
-          min="0.1"
+          min="0.0"
           step="0.1"
-          value={config.pauseTime || 1.0}
-          onChange={(e) => handleConfigUpdate('pauseTime', parseFloat(e.target.value))}
+          value={config.pause_time || 0.0}
+          onChange={(e) => handleConfigUpdate('pause_time', parseFloat(e.target.value))}
         />
       </div>
 
-      {/* Text */}
-      <div className={styles.configItem}>
-        <label className={styles.label}>Text:</label>
-        <input
-          type="text"
-          className={styles.input}
-          placeholder="Enter custom text..."
-          value={config.text || ''}
-          onChange={(e) => handleConfigUpdate('text', e.target.value)}
-        />
-      </div>
-
-      {/* Lines color with alpha */}
+      {/* Line color with alpha */}
       <div className={styles.configItem}>
         <label className={styles.label}>Line Color:</label>
         <div className={styles.colorContainer}>
@@ -450,27 +518,27 @@ const StatsAttributes = ({ selectedStatsType, config, onConfigChange }) => {
             <input
               type="color"
               className={styles.colorInput}
-              value={config.linesColor || '#39d353'}
-              onChange={(e) => handleConfigUpdate('linesColor', e.target.value)}
+              value={config.line_color || '#ff8c00'}
+              onChange={(e) => handleConfigUpdate('line_color', e.target.value)}
             />
-            <span className={styles.colorValue}>{config.linesColor || '#39d353'}</span>
+            <span className={styles.colorValue}>{config.line_color || '#ff8c00'}</span>
           </div>
           <div className={styles.alphaRow}>
-            <span className={styles.alphaLabel}>Alpha: {(config.linesAlpha ?? 1.0).toFixed(2)}</span>
+            <span className={styles.alphaLabel}>Alpha: {(config.line_alpha ?? 0.7).toFixed(2)}</span>
             <input
               type="range"
               className={styles.slider}
               min="0"
               max="1"
               step="0.01"
-              value={config.linesAlpha ?? 1.0}
+              value={config.line_alpha ?? 0.7}
               onInput={(e) => {
                 const value = Math.max(0, Math.min(1, parseFloat(e.target.value) || 0));
-                handleConfigUpdate('linesAlpha', value);
+                handleConfigUpdate('line_alpha', value);
               }}
               onChange={(e) => {
                 const value = Math.max(0, Math.min(1, parseFloat(e.target.value) || 0));
-                handleConfigUpdate('linesAlpha', value);
+                handleConfigUpdate('line_alpha', value);
               }}
             />
           </div>
@@ -479,14 +547,14 @@ const StatsAttributes = ({ selectedStatsType, config, onConfigChange }) => {
 
       {/* Square size */}
       <div className={styles.configItem}>
-        <label className={styles.label}>Square Size: {config.squareSize || 11}px</label>
+        <label className={styles.label}>Square Size: {config.square_size || 11}px</label>
         <input
           type="range"
           className={styles.slider}
           min="1"
           max="50"
-          value={config.squareSize || 11}
-          onChange={(e) => handleConfigUpdate('squareSize', parseInt(e.target.value))}
+          value={config.square_size || 11}
+          onChange={(e) => handleConfigUpdate('square_size', parseInt(e.target.value))}
         />
       </div>
     </div>

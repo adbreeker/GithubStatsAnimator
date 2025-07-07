@@ -72,8 +72,6 @@ def register_all_routes(app):
                         "slot3": "Same options as slot1 (default: commits_year)",
                         "slot4": "Same options as slot1 (default: pull_requests)",
                         "slot5": "Same options as slot1 (default: issues)",
-                        "width": "SVG width in pixels 200-1000 (default: 500)",
-                        "height": "SVG height in pixels 150-800 (default: 200)"
                     },
                     "note": "GitHub username is read from GITHUB_USERNAME environment variable"
                 }

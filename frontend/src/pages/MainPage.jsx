@@ -7,23 +7,28 @@ import styles from '../styles/mainPage.module.css';
 const MainPage = () => {
   const [selectedStatsType, setSelectedStatsType] = useState('Account General');
   const [config, setConfig] = useState({
-    slots: ['none', 'none', 'none', 'none', 'none'],
-    icon: 'none'
+    theme: 'dark',
+    slots: ['stars', 'commits_total', 'commits_year', 'pull_requests', 'issues'],
+    icon: 'default'
   });
 
   const getDefaultConfigForType = (type) => {
     switch (type) {
       case 'Account General':
         return {
-          slots: ['none', 'none', 'none', 'none', 'none'],
-          icon: 'none'
+          theme: 'dark',
+          slots: ['stars', 'commits_total', 'commits_year', 'pull_requests', 'issues'],
+          icon: 'default'
         };
       case 'Top Languages':
         return {
-          languagesCount: 5,
-          percentageDecimals: 1,
-          countOther: false,
-          excludedLanguages: []
+          theme: 'dark',
+          languages_count: 5,
+          decimal_places: 1,
+          count_other_languages: false,
+          exclude_languages: [],
+          width: 400,
+          height: 300
         };
       case 'Repositories':
         return {
@@ -31,11 +36,13 @@ const MainPage = () => {
         };
       case 'Contributions Graph':
         return {
-          animationTime: 2.0,
-          pauseTime: 1.0,
-          linesColor: '#39d353',
-          linesAlpha: 1.0,
-          text: ''
+          theme: 'dark',
+          text: 'ADBREEKER',
+          animation_time: 8.0,
+          pause_time: 0.0,
+          line_color: '#ff8c00',
+          line_alpha: 0.7,
+          square_size: 11
         };
       default:
         return {};
