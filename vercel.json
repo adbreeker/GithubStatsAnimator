@@ -31,6 +31,14 @@
     {
       "src": "api/minimal.py",
       "use": "@vercel/python"
+    },
+    {
+      "src": "api/debug.py",
+      "use": "@vercel/python"
+    },
+    {
+      "src": "api/simple-svg.py",
+      "use": "@vercel/python"
     }
   ],
   "routes": [
@@ -41,6 +49,14 @@
     {
       "src": "/api/minimal",
       "dest": "/api/minimal.py"
+    },
+    {
+      "src": "/api/debug",
+      "dest": "/api/debug.py"
+    },
+    {
+      "src": "/api/simple-svg",
+      "dest": "/api/simple-svg.py"
     },
     {
       "src": "/api/health",
