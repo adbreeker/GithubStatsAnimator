@@ -23,41 +23,9 @@
     {
       "src": "api/contributions-graph.py",
       "use": "@vercel/python"
-    },
-    {
-      "src": "api/test.py",
-      "use": "@vercel/python"
-    },
-    {
-      "src": "api/minimal.py",
-      "use": "@vercel/python"
-    },
-    {
-      "src": "api/debug.py",
-      "use": "@vercel/python"
-    },
-    {
-      "src": "api/simple-svg.py",
-      "use": "@vercel/python"
     }
   ],
   "routes": [
-    {
-      "src": "/api/test",
-      "dest": "/api/test.py"
-    },
-    {
-      "src": "/api/minimal",
-      "dest": "/api/minimal.py"
-    },
-    {
-      "src": "/api/debug",
-      "dest": "/api/debug.py"
-    },
-    {
-      "src": "/api/simple-svg",
-      "dest": "/api/simple-svg.py"
-    },
     {
       "src": "/api/health",
       "dest": "/api/health.py"
