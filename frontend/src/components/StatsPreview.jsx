@@ -3,17 +3,88 @@ import styles from '../styles/statsPreview.module.css';
 
 const StatsPreview = ({ selectedStatsType, config }) => {
   const [isLoading, setIsLoading] = useState(false);
+  const [svgContent, setSvgContent] = useState(null);
+  const [error, setError] = useState(null);
 
-  // TODO: This will be connected to backend API later
-  // For now, just showing a placeholder with the selected configuration
-  
-  const generatePreview = () => {
-    setIsLoading(true);
+  const generatePreview = async () => {
+    if (!hasConfiguration()) return;
     
-    // Simulate API call delay
-    setTimeout(() => {
+    setIsLoading(true);
+    setError(null);
+    
+    try {
+      const apiEndpoint = getApiEndpoint();
+      const queryParams = buildQueryParams();
+      const response = await fetch(`${apiEndpoint}?${queryParams}`);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const svgText = await response.text();
+      setSvgContent(svgText);
+    } catch (err) {
+      console.error('Error fetching SVG:', err);
+      setError(err.message);
+      setSvgContent(null);
+    } finally {
       setIsLoading(false);
-    }, 1000);
+    }
+  };
+
+  const getApiEndpoint = () => {
+    switch (selectedStatsType) {
+      case 'Account General':
+        return '/api/account-general';
+      case 'Top Languages':
+        return '/api/top-languages';
+      case 'Contributions Graph':
+        return '/api/contributions-graph';
+      default:
+        throw new Error(`Unknown stats type: ${selectedStatsType}`);
+    }
+  };
+
+  const buildQueryParams = () => {
+    const params = new URLSearchParams();
+    
+    switch (selectedStatsType) {
+      case 'Account General':
+        if (config.theme) params.append('theme', config.theme);
+        if (config.icon) params.append('icon', config.icon);
+        if (config.slots) {
+          config.slots.forEach((slot, index) => {
+            if (slot !== 'none') {
+              params.append(`slot${index + 1}`, slot);
+            }
+          });
+        }
+        break;
+        
+      case 'Top Languages':
+        if (config.theme) params.append('theme', config.theme);
+        if (config.languages_count) params.append('languages_count', config.languages_count);
+        if (config.decimal_places !== undefined) params.append('decimal_places', config.decimal_places);
+        if (config.count_other_languages) params.append('count_other_languages', config.count_other_languages);
+        if (config.exclude_languages && config.exclude_languages.length > 0) {
+          params.append('exclude_languages', config.exclude_languages.join(','));
+        }
+        if (config.width) params.append('width', config.width);
+        if (config.height) params.append('height', config.height);
+        break;
+        
+      case 'Contributions Graph':
+        if (config.theme) params.append('theme', config.theme);
+        if (config.text) params.append('text', config.text);
+        if (config.animation_time) params.append('animation_time', config.animation_time);
+        if (config.pause_time) params.append('pause_time', config.pause_time);
+        if (config.line_color) params.append('line_color', config.line_color);
+        if (config.line_alpha !== undefined) params.append('line_alpha', config.line_alpha);
+        if (config.square_size) params.append('square_size', config.square_size);
+        break;
+    }
+    
+    return params.toString();
   };
 
   useEffect(() => {
@@ -170,15 +241,52 @@ const StatsPreview = ({ selectedStatsType, config }) => {
     }
   };
 
+  const downloadSVG = () => {
+    if (!svgContent) return;
+    
+    const blob = new Blob([svgContent], { type: 'image/svg+xml' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `github-stats-${selectedStatsType.toLowerCase().replace(/\s+/g, '-')}.svg`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
+  const copyApiUrl = () => {
+    const apiEndpoint = getApiEndpoint();
+    const queryParams = buildQueryParams();
+    const fullUrl = `${window.location.origin}${apiEndpoint}?${queryParams}`;
+    
+    navigator.clipboard.writeText(fullUrl).then(() => {
+      // You could add a toast notification here
+      console.log('API URL copied to clipboard');
+    });
+  };
+
   return (
     <div className={styles.previewContainer}>
       <div className={styles.header}>
         <h3 className={styles.title}>Stats Preview</h3>
-        <div className={styles.configInfo}>
-          <span className={styles.statsType}>{selectedStatsType}</span>
-          <span className={styles.configStatus}>
-            {hasConfiguration() ? 'Configured' : 'Not configured'}
-          </span>
+        <div className={styles.headerActions}>
+          <div className={styles.configInfo}>
+            <span className={styles.statsType}>{selectedStatsType}</span>
+            <span className={styles.configStatus}>
+              {hasConfiguration() ? 'Configured' : 'Not configured'}
+            </span>
+          </div>
+          {svgContent && (
+            <div className={styles.actionButtons}>
+              <button onClick={downloadSVG} className={styles.actionButton}>
+                📥 Download SVG
+              </button>
+              <button onClick={copyApiUrl} className={styles.actionButton}>
+                🔗 Copy API URL
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
@@ -186,8 +294,21 @@ const StatsPreview = ({ selectedStatsType, config }) => {
         {isLoading ? (
           <div className={styles.loadingState}>
             <div className={styles.spinner}></div>
-            <span>Generating preview...</span>
+            <span>Generating SVG...</span>
           </div>
+        ) : error ? (
+          <div className={styles.errorState}>
+            <div className={styles.errorIcon}>⚠️</div>
+            <p>Error generating SVG: {error}</p>
+            <button onClick={generatePreview} className={styles.retryButton}>
+              Retry
+            </button>
+          </div>
+        ) : svgContent ? (
+          <div 
+            className={styles.svgContainer}
+            dangerouslySetInnerHTML={{ __html: svgContent }}
+          />
         ) : hasConfiguration() ? (
           <div className={styles.previewContent}>
             {renderPlaceholderContent()}
@@ -200,14 +321,20 @@ const StatsPreview = ({ selectedStatsType, config }) => {
         )}
       </div>
 
-      {/* TODO: Connect to backend API */}
-      {/* 
-      Future implementation:
-      - Send selectedStatsType and config to backend
-      - Receive generated stats visualization
-      - Display real GitHub stats with animation
-      - Add export options (PNG, SVG, GIF)
-      */}
+      <div className={styles.actions}>
+        <button onClick={downloadSVG} className={styles.actionButton}>
+          Download SVG
+        </button>
+        <button onClick={copyApiUrl} className={styles.actionButton}>
+          Copy API URL
+        </button>
+      </div>
+
+      {/* API Integration Complete - Real GitHub Stats */}
+      <div className={styles.apiInfo}>
+        <span className={styles.badge}>Live Data</span>
+        Connected to GitHub API
+      </div>
     </div>
   );
 };
