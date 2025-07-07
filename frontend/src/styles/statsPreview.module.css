@@ -312,6 +312,110 @@
   border-radius: var(--radius-md);
 }
 
+/* Error State Styles */
+.errorState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 200px;
+  color: var(--error-text, #e74c3c);
+  text-align: center;
+}
+
+.errorIcon {
+  font-size: 2rem;
+  margin-bottom: var(--spacing-md);
+}
+
+.retryButton {
+  margin-top: var(--spacing-md);
+  padding: var(--spacing-sm) var(--spacing-lg);
+  background: var(--primary-accent);
+  color: white;
+  border: none;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  font-size: var(--font-sm);
+  transition: background 0.3s ease;
+}
+
+.retryButton:hover {
+  background: var(--primary-accent-hover, #8b5cf6);
+}
+
+/* SVG Container Styles */
+.svgContainer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: var(--spacing-lg);
+  background: var(--secondary-bg);
+  border-radius: var(--radius-lg);
+  min-height: 200px;
+  overflow: auto;
+}
+
+.svgContainer svg {
+  max-width: 100%;
+  height: auto;
+  border-radius: var(--radius-md);
+}
+
+/* API Info Badge Styles */
+.apiInfo {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  margin-top: var(--spacing-md);
+  padding: var(--spacing-sm) var(--spacing-md);
+  background: rgba(34, 197, 94, 0.1);
+  border: 1px solid rgba(34, 197, 94, 0.3);
+  border-radius: var(--radius-md);
+  color: var(--success-text, #22c55e);
+  font-size: var(--font-xs);
+}
+
+.badge {
+  background: var(--success-text, #22c55e);
+  color: white;
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+  font-size: 10px;
+  font-weight: var(--font-medium);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Header Actions Styles */
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+}
+
+.actionButtons {
+  display: flex;
+  gap: var(--spacing-sm);
+}
+
+.actionButton {
+  padding: var(--spacing-xs) var(--spacing-sm);
+  background: var(--secondary-bg);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-size: var(--font-xs);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.actionButton:hover {
+  background: var(--primary-accent);
+  color: white;
+  border-color: var(--primary-accent);
+}
+
 /* Responsive adjustments */
 @media (max-width: 768px) {
   .header {

@@ -1,0 +1,52 @@
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "package.json",
+      "use": "@vercel/static-build",
+      "config": {
+        "distDir": "frontend/dist"
+      }
+    }
+  ],
+  "routes": [
+    {
+      "src": "/api/health",
+      "dest": "/api/health.py"
+    },
+    {
+      "src": "/api/contributions-graph",
+      "dest": "/api/contributions-graph.py"
+    },
+    {
+      "src": "/api/top-languages", 
+      "dest": "/api/top-languages.py"
+    },
+    {
+      "src": "/api/account-general",
+      "dest": "/api/account-general.py"
+    },
+    {
+      "src": "/",
+      "dest": "/frontend/dist/index.html"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/frontend/dist/$1"
+    }
+  ],
+  "functions": {
+    "api/health.py": {
+      "runtime": "python3.9"
+    },
+    "api/contributions-graph.py": {
+      "runtime": "python3.9"
+    },
+    "api/top-languages.py": {
+      "runtime": "python3.9"
+    },
+    "api/account-general.py": {
+      "runtime": "python3.9"
+    }
+  }
+}

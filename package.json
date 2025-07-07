@@ -1,0 +1,19 @@
+{
+  "name": "github-stats-animator",
+  "version": "1.0.0",
+  "description": "Animated GitHub stats generator with React frontend and Python backend",
+  "main": "index.js",
+  "scripts": {
+    "build": "cd frontend && npm install && npm run build",
+    "dev": "concurrently \"cd backend && python start.py\" \"cd frontend && npm run dev\"",
+    "frontend:dev": "cd frontend && npm run dev",
+    "backend:dev": "cd backend && python start.py",
+    "vercel-build": "cd frontend && npm install && npm run build"
+  },
+  "keywords": ["github", "stats", "svg", "animation", "react", "python"],
+  "author": "Your Name",
+  "license": "MIT",
+  "devDependencies": {
+    "concurrently": "^7.6.0"
+  }
+}
