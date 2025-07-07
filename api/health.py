@@ -1,4 +1,5 @@
 from http.server import BaseHTTPRequestHandler
+from urllib.parse import urlparse
 import json
 
 class handler(BaseHTTPRequestHandler):

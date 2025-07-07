@@ -5,9 +5,9 @@
   "main": "index.js",
   "scripts": {
     "build": "cd frontend && npm install && npm run build",
-    "dev": "concurrently \"cd backend && python start.py\" \"cd frontend && npm run dev\"",
+    "dev": "concurrently \"python local-dev-server.py\" \"cd frontend && npm run dev\"",
     "frontend:dev": "cd frontend && npm run dev",
-    "backend:dev": "cd backend && python start.py",
+    "backend:dev": "python local-dev-server.py",
     "vercel-build": "cd frontend && npm install && npm run build"
   },
   "keywords": ["github", "stats", "svg", "animation", "react", "python"],

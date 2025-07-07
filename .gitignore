@@ -1,7 +1,6 @@
 # Dependencies
 node_modules/
 frontend/node_modules/
-backend/__pycache__/
 api/__pycache__/
 *.pyc
 *.pyo
@@ -22,7 +21,7 @@ build/
 .env.development.local
 .env.test.local
 .env.production.local
-backend/.env
+api/.env
 
 # IDE and editor files
 .vscode/
@@ -176,7 +175,8 @@ dmypy.json
 cython_debug/
 
 # Test results and artifacts
-backend/tests/results/
+tests/
+test-results/
 *.svg
 *.png
 *.gif
@@ -194,3 +194,6 @@ backend/tests/results/
 # Backup files
 *.bak
 *.backup
+
+# Local development
+local-dev-server.log

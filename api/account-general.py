@@ -66,15 +66,16 @@ class handler(BaseHTTPRequestHandler):
             loop = asyncio.new_event_loop()
             asyncio.set_event_loop(loop)
             
+            # Combine slot parameters into a list
+            slots = [slot1, slot2, slot3, slot4, slot5]
+            # Remove any 'none' values and keep only first 5
+            slots = [slot for slot in slots if slot != 'none'][:5]
+            
             svg_content = loop.run_until_complete(create_account_general_svg(
                 username=username,
                 theme=theme,
                 icon=icon,
-                slot1=slot1,
-                slot2=slot2,
-                slot3=slot3,
-                slot4=slot4,
-                slot5=slot5
+                slots=slots
             ))
             
             loop.close()

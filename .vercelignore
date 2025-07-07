@@ -1,16 +1,20 @@
-# Development files
-backend/
+# Local development files
+local-dev-server.py
+local-dev-server.log
 *.pyc
 __pycache__/
 .env
 .env.local
 
-# Node modules (will be installed during build)
+# Development dependencies (will be installed during build)
 node_modules/
 frontend/node_modules/
 
-# Build artifacts
+# Build outputs (generated during build)
 frontend/dist/
+
+# Backend files (no longer needed)
+backend/
 
 # IDE files
 .vscode/
@@ -29,4 +33,5 @@ yarn-debug.log*
 yarn-error.log*
 
 # Test files
-backend/tests/
+tests/
+test-results/
