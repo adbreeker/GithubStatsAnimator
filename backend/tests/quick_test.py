@@ -147,12 +147,12 @@ async def quick_test():
     print("\n3️⃣ Testing account general stats...")
     try:
         # First, fetch and display the raw stats data
-        from utils.account_general_generator import GitHubAccountStatsAPI, calculate_stats
+        from utils.account_general_generator import GitHubAccountStatsAPI, calculate_basic_stats
         
         print("📊 Fetching raw statistics...")
         api = GitHubAccountStatsAPI()
         user_data = await api.fetch_account_stats(username)
-        stats = calculate_stats(user_data)
+        stats = calculate_basic_stats(user_data)
         
         # Get enhanced stats (including streak)
         total_commits = await api.fetch_total_commits(username)

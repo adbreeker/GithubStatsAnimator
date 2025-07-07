@@ -18,7 +18,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
 from utils.contributions_graph_generator import generate_contributions_svg
 from utils.top_languages_generator import create_top_languages_svg
-from utils.account_general_generator import create_account_general_svg, GitHubAccountStatsAPI, calculate_stats
+from utils.account_general_generator import create_account_general_svg, GitHubAccountStatsAPI, calculate_basic_stats
 
 class TestRunner:
     def __init__(self):
@@ -382,7 +382,7 @@ async def test_account_general_basic(runner):
         runner.log("📊 Fetching raw statistics for verification...")
         api = GitHubAccountStatsAPI()
         user_data = await api.fetch_account_stats(username)
-        stats = calculate_stats(user_data)
+        stats = calculate_basic_stats(user_data)
         
         # Get enhanced stats (including streak)
         total_commits = await api.fetch_total_commits(username)
@@ -528,7 +528,7 @@ async def test_account_general_api_accuracy(runner):
         
         # Test basic data fetch
         user_data = await api.fetch_account_stats(username)
-        basic_stats = calculate_stats(user_data)
+        basic_stats = calculate_basic_stats(user_data)
         
         # Test total commits (all years)
         total_commits = await api.fetch_total_commits(username)
