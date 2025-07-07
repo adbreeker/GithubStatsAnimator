@@ -1,16 +1,29 @@
-# Development files
-backend/
+# Local development files
+local-dev-server.py
+local-dev-server.log
 *.pyc
 __pycache__/
 .env
 .env.local
 
+# Frontend development files (Vercel builds frontend separately)
+frontend/src/
+frontend/public/
+frontend/index.html
+frontend/vite.config.js
+frontend/eslint.config.js
+frontend/package.json
+frontend/README.md
+
 # Node modules (will be installed during build)
 node_modules/
 frontend/node_modules/
 
-# Build artifacts
+# Build artifacts (Vercel will build)
 frontend/dist/
+
+# Root package.json (used for local dev orchestration)
+package.json
 
 # IDE files
 .vscode/
@@ -29,4 +42,8 @@ yarn-debug.log*
 yarn-error.log*
 
 # Test files
-backend/tests/
+tests/
+test-results/
+
+# Documentation
+README.md
