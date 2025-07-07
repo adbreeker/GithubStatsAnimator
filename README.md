@@ -111,7 +111,7 @@ To deploy your own instance and generate stats for your GitHub profile:
 3. Give it a descriptive name like "GitHub Stats Animator"
 4. Select the following scopes:
    - `read:user` - Access to profile information
-   - `public_repo` - Access to public repositories
+   - `repo:status` - Access to repository commit status
 5. Click **"Generate token"** and copy the token (save it securely!)
 
 ### Step 3: Deploy on Vercel
@@ -202,16 +202,16 @@ That's it! 🎉 Your personal GitHub Stats Animator is now live and ready to use
 ### GitHub Token Permissions
 Your GitHub token needs the following permissions:
 - **read:user** - Access to profile information
-- **public_repo** - Access to public repositories
+- **repo:status** - Access to repository commit status
 - **repo** - Access to private repositories (if you want to include stats from private repos)
 - **read:org** (optional) - If you want to include organization data
 
 > **⚠️ Security Warning about Private Repositories:** 
 > 
-> If you want your GitHub stats to include contributions from private repositories, you need to grant the **`repo`** scope instead of just `public_repo`. However, **using the `repo` scope is discouraged** as it gives full access to all your repositories (both public and private), including the ability to read, write, and delete repository content.
+> If you want your GitHub stats to include contributions from private repositories, you need to grant the **`repo`** scope instead of just `repo:status`. However, **using the `repo` scope is discouraged** as it gives full access to all your repositories (both public and private), including the ability to read, write, and delete repository content.
 > 
 > **If this token is ever leaked or compromised, it could cause significant harm to your private repositories.** For security reasons, it's recommended to:
-> - Use only `public_repo` scope when possible
+> - Use only `repo:status` scope when possible
 > - If you must use `repo` scope, ensure your deployment environment is secure
 > - Regularly rotate your tokens
 > - Consider the trade-off between comprehensive stats and security
