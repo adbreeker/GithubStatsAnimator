@@ -16,12 +16,6 @@ frontend/dist/
 # Backend files (no longer needed)
 backend/
 
-# Build artifacts (Vercel will build)
-frontend/dist/
-
-# Root package.json (used for local dev orchestration)
-package.json
-
 # IDE files
 .vscode/
 .idea/
@@ -41,6 +35,3 @@ yarn-error.log*
 # Test files
 tests/
 test-results/
-
-# Documentation
-README.md
