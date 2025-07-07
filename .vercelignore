@@ -6,18 +6,15 @@ __pycache__/
 .env
 .env.local
 
-# Frontend development files (Vercel builds frontend separately)
-frontend/src/
-frontend/public/
-frontend/index.html
-frontend/vite.config.js
-frontend/eslint.config.js
-frontend/package.json
-frontend/README.md
-
-# Node modules (will be installed during build)
+# Development dependencies (will be installed during build)
 node_modules/
 frontend/node_modules/
+
+# Build outputs (generated during build)
+frontend/dist/
+
+# Backend files (no longer needed)
+backend/
 
 # Build artifacts (Vercel will build)
 frontend/dist/
