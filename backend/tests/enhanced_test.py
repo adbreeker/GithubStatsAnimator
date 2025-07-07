@@ -18,6 +18,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
 from utils.contributions_graph_generator import generate_contributions_svg
 from utils.top_languages_generator import create_top_languages_svg
+from utils.account_general_generator import create_account_general_svg, GitHubAccountStatsAPI, calculate_stats
 
 class TestRunner:
     def __init__(self):
@@ -370,6 +371,342 @@ def check_environment(runner):
     
     return len(issues) == 0
 
+async def test_account_general_basic(runner):
+    """Test basic account general stats generation with data verification"""
+    runner.log("Testing Basic Account General Stats...", "test")
+    
+    username = os.getenv('GITHUB_USERNAME', 'adbreeker')
+    
+    try:
+        # First, fetch and display the raw stats data
+        runner.log("📊 Fetching raw statistics for verification...")
+        api = GitHubAccountStatsAPI()
+        user_data = await api.fetch_account_stats(username)
+        stats = calculate_stats(user_data)
+        
+        # Get enhanced stats (including streak)
+        total_commits = await api.fetch_total_commits(username)
+        total_reviews = await api.fetch_total_code_reviews(username)
+        streak = await api.calculate_streak(user_data['contributionsCollection']['contributionCalendar'])
+        
+        stats['commits_total'] = total_commits
+        stats['code_reviews'] = total_reviews
+        stats['streak'] = streak
+        
+        # Display all stats for verification
+        runner.log(f"📈 Raw Stats for {username}:")
+        runner.log(f"   ⭐ Stars: {stats['stars']}")
+        runner.log(f"   📝 Total Commits: {stats['commits_total']}")
+        runner.log(f"   📅 Commits ({datetime.now().year}): {stats['commits_year']}")
+        runner.log(f"   🔀 Pull Requests: {stats['pull_requests']}")
+        runner.log(f"   👀 Code Reviews: {stats['code_reviews']}")
+        runner.log(f"   🐛 Issues: {stats['issues']}")
+        runner.log(f"   🌐 External Contributions: {stats['external_contributions']}")
+        runner.log(f"   🔥 Current Streak: {streak} days")
+        
+        # Generate basic SVG
+        svg_content = await create_account_general_svg(
+            username=username,
+            theme="dark",
+            icon="streak",
+            slots=['stars', 'commits_total', 'commits_year', 'pull_requests', 'issues']
+        )
+        
+        filename = os.path.join(runner.results_dir, f"{username}_account_basic.svg")
+        with open(filename, 'w', encoding='utf-8') as f:
+            f.write(svg_content)
+        
+        runner.log(f"✅ Basic Account General: {len(svg_content):,} chars", "success")
+        
+        # Data validation
+        validation_issues = []
+        if stats['commits_total'] < stats['commits_year']:
+            validation_issues.append("Total commits < year commits")
+        if stats['commits_total'] < 50:  # Assuming active user
+            validation_issues.append(f"Low total commits: {stats['commits_total']}")
+        
+        if validation_issues:
+            runner.log(f"⚠️ Data validation issues: {', '.join(validation_issues)}", "warning")
+        else:
+            runner.log("✅ Data validation passed", "success")
+        
+        runner.save_result("account_general_basic", True, {
+            "svg_size": len(svg_content),
+            "stats": stats,
+            "streak": streak,
+            "validation_issues": validation_issues
+        })
+        
+        return True
+        
+    except Exception as e:
+        runner.log(f"❌ Basic Account General failed: {e}", "error")
+        runner.save_result("account_general_basic", False, {"error": str(e)})
+        return False
+
+async def test_account_general_advanced(runner):
+    """Test advanced account general configurations"""
+    runner.log("Testing Advanced Account General Configurations...", "test")
+    
+    username = os.getenv('GITHUB_USERNAME', 'adbreeker')
+    
+    test_configs = [
+        {
+            "name": "dark_streak_icon",
+            "params": {
+                "theme": "dark",
+                "icon": "streak", 
+                "slots": ['stars', 'commits_total', 'commits_year', 'pull_requests', 'code_reviews']
+            }
+        },
+        {
+            "name": "light_rotating_icon",
+            "params": {
+                "theme": "light",
+                "icon": "default+streak",
+                "slots": ['commits_total', 'pull_requests', 'issues', 'external_contributions', 'stars']
+            }
+        },
+        {
+            "name": "github_plus_streak",
+            "params": {
+                "theme": "dark", 
+                "icon": "github+streak",
+                "slots": ['commits_year', 'code_reviews', 'pull_requests', 'commits_total', 'issues']
+            }
+        },
+        {
+            "name": "user_avatar_light",
+            "params": {
+                "theme": "light",
+                "icon": "user",
+                "slots": ['stars', 'external_contributions', 'commits_total', 'pull_requests', 'issues']
+            }
+        }
+    ]
+    
+    success_count = 0
+    
+    for config in test_configs:
+        try:
+            runner.log(f"  Testing {config['name']}...")
+            
+            svg_content = await create_account_general_svg(
+                username=username,
+                **config["params"]
+            )
+            
+            filename = os.path.join(runner.results_dir, f"{username}_account_{config['name']}.svg")
+            with open(filename, 'w', encoding='utf-8') as f:
+                f.write(svg_content)
+            
+            runner.log(f"  ✅ {config['name']}: {len(svg_content):,} chars")
+            success_count += 1
+            
+        except Exception as e:
+            runner.log(f"  ❌ {config['name']}: {e}")
+    
+    success = success_count == len(test_configs)
+    runner.save_result("account_general_advanced", success, {
+        "total_tests": len(test_configs),
+        "passed": success_count
+    })
+    
+    return success
+
+async def test_account_general_api_accuracy(runner):
+    """Test API data accuracy and consistency with comprehensive validation"""
+    runner.log("Testing Account General API Data Accuracy...", "test")
+    
+    username = os.getenv('GITHUB_USERNAME', 'adbreeker')
+    
+    try:
+        api = GitHubAccountStatsAPI()
+        
+        # Test individual API methods
+        runner.log("🔍 Testing individual API methods...")
+        
+        # Test basic data fetch
+        user_data = await api.fetch_account_stats(username)
+        basic_stats = calculate_stats(user_data)
+        
+        # Test total commits (all years)
+        total_commits = await api.fetch_total_commits(username)
+        
+        # Test total code reviews (all years) 
+        total_reviews = await api.fetch_total_code_reviews(username)
+        
+        # Test streak calculation
+        streak = await api.calculate_streak(user_data['contributionsCollection']['contributionCalendar'])
+        
+        # Ensure streak is in basic_stats for consistency
+        basic_stats['streak'] = streak
+        
+        # Test additional API methods from other generators
+        runner.log("🔍 Testing cross-API integration...")
+        
+        # Test contributions API
+        from utils.contributions_graph_generator import GitHubContributionsAPI
+        contrib_api = GitHubContributionsAPI()
+        contrib_data = await contrib_api.fetch_contributions(username)
+        
+        # Test languages API
+        from utils.top_languages_generator import GitHubLanguagesGraphQL
+        lang_api = GitHubLanguagesGraphQL()
+        raw_lang_data = await lang_api.fetch_top_languages_graphql(username)
+        
+        # Process the raw data to get aggregated stats (similar to what the SVG generator does)
+        lang_stats = {}
+        total_size = 0
+        
+        for repo in raw_lang_data:
+            for edge in repo['languages']['edges']:
+                lang_name = edge['node']['name']
+                size = edge['size']
+                lang_stats[lang_name] = lang_stats.get(lang_name, 0) + size
+                total_size += size
+        
+        # Sort languages by size
+        sorted_langs = sorted(lang_stats.items(), key=lambda x: x[1], reverse=True)
+        
+        # Create a lang_data structure for consistency
+        lang_data = {
+            'languages': [{'name': lang, 'size': size, 'percentage': (size / total_size * 100) if total_size > 0 else 0} 
+                         for lang, size in sorted_langs],
+            'total_repos': len(raw_lang_data),
+            'total_size': total_size
+        }
+        
+        # Display comprehensive API results
+        runner.log("📊 Complete API Method Results:")
+        runner.log(f"   👤 Username: {user_data.get('login', 'N/A')}")
+        runner.log(f"   📅 Account Created: {user_data.get('createdAt', 'N/A')[:10]}")
+        runner.log(f"   ⭐ Total Stars: {basic_stats['stars']}")
+        runner.log(f"   📝 Total Commits (All-Time): {total_commits}")
+        runner.log(f"   📅 Commits ({datetime.now().year}): {basic_stats['commits_year']}")
+        runner.log(f"   🔀 Pull Requests (All-Time): {basic_stats['pull_requests']}")
+        runner.log(f"   👀 Code Reviews (All-Time): {total_reviews}")
+        runner.log(f"   🐛 Issues (All-Time): {basic_stats['issues']}")
+        runner.log(f"   🌐 External Contributions: {basic_stats['external_contributions']}")
+        runner.log(f"   🔥 Current Streak: {streak} days")
+        runner.log(f"   👥 Followers: {basic_stats.get('followers', 'N/A')}")
+        runner.log(f"   👤 Following: {basic_stats.get('following', 'N/A')}")
+        runner.log(f"   📦 Public Repos: {basic_stats.get('public_repos', 'N/A')}")
+        
+        # Contributions data validation
+        runner.log(f"   📊 Contribution Graph - Total: {contrib_data.get('totalContributions', 'N/A')}")
+        runner.log(f"   📊 Contribution Graph - Weeks: {len(contrib_data.get('weeks', []))}")
+        
+        # Languages data validation
+        if 'languages' in lang_data and lang_data['languages']:
+            top_lang = lang_data['languages'][0]
+            runner.log(f"   💻 Top Language: {top_lang['name']} ({top_lang['percentage']:.1f}%)")
+            runner.log(f"   💻 Languages Count: {len(lang_data['languages'])}")
+            runner.log(f"   📦 Analyzed Repos: {lang_data.get('total_repos', 'N/A')}")
+        else:
+            runner.log(f"   💻 Languages: No data available")
+        
+        # Comprehensive consistency checks
+        issues = []
+        warnings = []
+        
+        # Critical checks (failures)
+        if total_commits < basic_stats['commits_year']:
+            issues.append(f"Total commits ({total_commits}) < year commits ({basic_stats['commits_year']})")
+            
+        if total_reviews < 0:
+            issues.append(f"Negative code reviews count: {total_reviews}")
+            
+        if streak < 0:
+            issues.append(f"Negative streak value: {streak}")
+            
+        if not user_data.get('login'):
+            issues.append("Missing user login data")
+        
+        if basic_stats['stars'] < 0:
+            issues.append(f"Negative stars count: {basic_stats['stars']}")
+        
+        # Warning checks (suspicious but not necessarily wrong)
+        if contrib_data.get('totalContributions', 0) != basic_stats['commits_year']:
+            warnings.append(f"Contrib total ({contrib_data.get('totalContributions')}) != year commits ({basic_stats['commits_year']})")
+        
+        if total_commits > 50000:  # Very high commit count
+            warnings.append(f"Extremely high commit count: {total_commits}")
+        
+        if streak > 365:  # Very long streak
+            warnings.append(f"Very long streak: {streak} days")
+        
+        # Cross-API consistency
+        runner.log("🔍 Cross-API Consistency Checks:")
+        consistency_score = 0
+        consistency_total = 0
+        
+        # Check 1: Basic API vs Enhanced Commits
+        consistency_total += 1
+        if total_commits >= basic_stats['commits_year']:
+            runner.log("   ✅ Total commits >= year commits")
+            consistency_score += 1
+        else:
+            runner.log(f"   ❌ Total commits ({total_commits}) < year commits ({basic_stats['commits_year']})")
+        
+        # Check 2: Code reviews validation
+        consistency_total += 1
+        if total_reviews >= 0:
+            runner.log(f"   ✅ Code reviews count valid ({total_reviews})")
+            consistency_score += 1
+        else:
+            runner.log(f"   ❌ Invalid code reviews count: {total_reviews}")
+        
+        # Check 3: Contributions graph consistency
+        consistency_total += 1
+        contrib_total = contrib_data.get('totalContributions', 0)
+        if contrib_total >= 0:
+            runner.log(f"   ✅ Contributions graph total valid ({contrib_total})")
+            consistency_score += 1
+        else:
+            runner.log(f"   ❌ Invalid contributions total: {contrib_total}")
+        
+        # Check 4: Languages data consistency
+        consistency_total += 1
+        if lang_data and 'languages' in lang_data and isinstance(lang_data['languages'], list):
+            runner.log(f"   ✅ Languages data valid ({len(lang_data['languages'])} languages)")
+            consistency_score += 1
+        else:
+            runner.log("   ❌ Invalid languages data structure")
+        
+        success = len(issues) == 0
+        
+        if success:
+            runner.log("✅ All critical API data checks passed", "success")
+        else:
+            runner.log(f"❌ Critical API issues: {'; '.join(issues)}", "error")
+        
+        if warnings:
+            runner.log(f"⚠️ API warnings: {'; '.join(warnings)}", "warning")
+        
+        runner.log(f"📊 Consistency Score: {consistency_score}/{consistency_total}")
+        
+        runner.save_result("account_general_api_accuracy", success, {
+            "total_commits": total_commits,
+            "total_reviews": total_reviews,
+            "streak": streak,
+            "basic_stats": basic_stats,
+            "contrib_data": contrib_data,
+            "lang_data": lang_data,
+            "issues": issues,
+            "warnings": warnings,
+            "consistency_score": f"{consistency_score}/{consistency_total}"
+        })
+        
+        return success
+        
+    except Exception as e:
+        runner.log(f"❌ API accuracy test failed: {e}", "error")
+        import traceback
+        runner.log(f"Traceback: {traceback.format_exc()}")
+        runner.save_result("account_general_api_accuracy", False, {"error": str(e)})
+        return False
+
 async def main():
     """Run comprehensive test suite"""
     runner = TestRunner()
@@ -390,6 +727,9 @@ async def main():
         test_contribution_graph_advanced,
         test_top_languages_basic,
         test_top_languages_advanced,
+        test_account_general_basic,
+        test_account_general_advanced,
+        test_account_general_api_accuracy,
         test_error_conditions,
         test_performance
     ]

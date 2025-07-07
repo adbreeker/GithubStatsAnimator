@@ -117,8 +117,26 @@ class GitHubAccountStatsAPI:
                 }
               }
             }
+            # Get all-time contributions (no date filter)
+            allTimeContributions: contributionsCollection {
+              totalCommitContributions
+              totalIssueContributions
+              totalPullRequestContributions
+              totalPullRequestReviewContributions
+            }
             repositoriesContributedTo(first: 100, contributionTypes: [COMMIT, ISSUE, PULL_REQUEST, REPOSITORY]) {
               totalCount
+            }
+            # Get more accurate external contributions
+            pullRequests(first: 1) {
+              totalCount
+            }
+            issues(first: 1) {
+              totalCount
+            }
+            # Get all-time pull request reviews
+            pullRequestReviews: contributionsCollection {
+              totalPullRequestReviewContributions
             }
           }
         }
@@ -158,29 +176,26 @@ class GitHubAccountStatsAPI:
                 return data['data']['user']
 
     async def fetch_total_commits(self, username: str) -> int:
-        """Fetch total commits by getting user's contribution data without date restrictions"""
+        """Fetch total commits across ALL years since account creation"""
         
-        # Get contributions without date filtering to get all-time data
-        query = """
-        query userContributions($login: String!) {
+        # First, get the user's account creation date
+        query_user_info = """
+        query userCreationDate($login: String!) {
           user(login: $login) {
-            contributionsCollection {
-              totalCommitContributions
-            }
+            createdAt
           }
         }
         """
-        
-        variables = {"login": username}
         
         headers = {
             'Authorization': f'Bearer {self.token}',
             'Content-Type': 'application/json',
         }
         
+        # Get account creation year
         payload = {
-            "query": query,
-            "variables": variables
+            "query": query_user_info,
+            "variables": {"login": username}
         }
         
         async with aiohttp.ClientSession() as session:
@@ -189,19 +204,53 @@ class GitHubAccountStatsAPI:
                     return 0
                 
                 data = await response.json()
-                
                 if 'errors' in data or not data.get('data'):
                     return 0
                 
-                # This gives us all-time commits (GitHub's default is last year)
-                # For true all-time commits, we'd need to aggregate multiple years
-                # For now, let's return what we get and note this limitation
-                all_time_commits = data['data']['user']['contributionsCollection']['totalCommitContributions']
+                created_at = data['data']['user']['createdAt']
+                creation_year = int(created_at[:4])  # Extract year from ISO date
+                current_year = datetime.now().year
                 
-                # Since GitHub's default contributionsCollection only shows last year,
-                # we'll use a multiplier estimation or just return the available data
-                # For now, let's return what we get and note this limitation
-                return all_time_commits
+                # Build dynamic query for ALL years from creation to current
+                query_parts = []
+                for year in range(creation_year, current_year + 1):
+                    query_parts.append(f"""
+                    year{year}: contributionsCollection(from: "{year}-01-01T00:00:00Z", to: "{year}-12-31T23:59:59Z") {{
+                      totalCommitContributions
+                    }}""")
+                
+                full_query = f"""
+                query userAllYearContributions($login: String!) {{
+                  user(login: $login) {{
+                    {chr(10).join(query_parts)}
+                  }}
+                }}
+                """
+                
+                # Execute the dynamic query
+                payload = {
+                    "query": full_query,
+                    "variables": {"login": username}
+                }
+                
+                async with session.post(GITHUB_GRAPHQL_URL, headers=headers, json=payload) as response:
+                    if response.status != 200:
+                        return 0
+                    
+                    data = await response.json()
+                    if 'errors' in data or not data.get('data'):
+                        return 0
+                    
+                    user_data = data['data']['user']
+                    
+                    # Sum up commits from ALL years
+                    total_commits = 0
+                    for year in range(creation_year, current_year + 1):
+                        year_key = f'year{year}'
+                        if year_key in user_data:
+                            total_commits += user_data[year_key]['totalCommitContributions']
+                    
+                    return total_commits
 
     async def calculate_streak(self, contributions_calendar: Dict) -> int:
         """Calculate current streak from contributions calendar"""
@@ -268,8 +317,85 @@ class GitHubAccountStatsAPI:
         
         return None
 
+    async def fetch_total_code_reviews(self, username: str) -> int:
+        """Fetch total code reviews across ALL years since account creation"""
+        
+        # First, get the user's account creation date
+        query_user_info = """
+        query userCreationDate($login: String!) {
+          user(login: $login) {
+            createdAt
+          }
+        }
+        """
+        
+        headers = {
+            'Authorization': f'Bearer {self.token}',
+            'Content-Type': 'application/json',
+        }
+        
+        # Get account creation year
+        payload = {
+            "query": query_user_info,
+            "variables": {"login": username}
+        }
+        
+        async with aiohttp.ClientSession() as session:
+            async with session.post(GITHUB_GRAPHQL_URL, headers=headers, json=payload) as response:
+                if response.status != 200:
+                    return 0
+                
+                data = await response.json()
+                if 'errors' in data or not data.get('data'):
+                    return 0
+                
+                created_at = data['data']['user']['createdAt']
+                creation_year = int(created_at[:4])  # Extract year from ISO date
+                current_year = datetime.now().year
+                
+                # Build dynamic query for ALL years from creation to current
+                query_parts = []
+                for year in range(creation_year, current_year + 1):
+                    query_parts.append(f"""
+                    year{year}: contributionsCollection(from: "{year}-01-01T00:00:00Z", to: "{year}-12-31T23:59:59Z") {{
+                      totalPullRequestReviewContributions
+                    }}""")
+                
+                full_query = f"""
+                query userAllYearReviews($login: String!) {{
+                  user(login: $login) {{
+                    {chr(10).join(query_parts)}
+                  }}
+                }}
+                """
+                
+                # Execute the dynamic query
+                payload = {
+                    "query": full_query,
+                    "variables": {"login": username}
+                }
+                
+                async with session.post(GITHUB_GRAPHQL_URL, headers=headers, json=payload) as response:
+                    if response.status != 200:
+                        return 0
+                    
+                    data = await response.json()
+                    if 'errors' in data or not data.get('data'):
+                        return 0
+                    
+                    user_data = data['data']['user']
+                    
+                    # Sum up code reviews from ALL years
+                    total_reviews = 0
+                    for year in range(creation_year, current_year + 1):
+                        year_key = f'year{year}'
+                        if year_key in user_data:
+                            total_reviews += user_data[year_key]['totalPullRequestReviewContributions']
+                    
+                    return total_reviews
+
 def calculate_stats(user_data: Dict[str, Any]) -> Dict[str, int]:
-    """Calculate all statistics from user data"""
+    """Calculate all statistics from user data (except streak which requires async calculation)"""
     
     stats = {}
     
@@ -280,17 +406,34 @@ def calculate_stats(user_data: Dict[str, Any]) -> Dict[str, int]:
     # Commits this year
     stats['commits_year'] = user_data['contributionsCollection']['totalCommitContributions']
     
-    # Pull requests
-    stats['pull_requests'] = user_data['contributionsCollection']['totalPullRequestContributions']
+    # Pull requests - use all-time data if available, otherwise current year
+    stats['pull_requests'] = user_data.get('pullRequests', {}).get('totalCount', 
+                                user_data['contributionsCollection']['totalPullRequestContributions'])
     
-    # Code reviews  
+    # Code reviews - use current year data
     stats['code_reviews'] = user_data['contributionsCollection']['totalPullRequestReviewContributions']
     
-    # Issues
-    stats['issues'] = user_data['contributionsCollection']['totalIssueContributions']
+    # Issues - use all-time data if available, otherwise current year
+    stats['issues'] = user_data.get('issues', {}).get('totalCount',
+                        user_data['contributionsCollection']['totalIssueContributions'])
     
     # External contributions
     stats['external_contributions'] = user_data['repositoriesContributedTo']['totalCount']
+    
+    # Note: streak is not included here as it requires async calculation
+    # Use api.calculate_streak() separately and add to stats as needed
+    
+    return stats
+
+async def calculate_complete_stats(user_data: Dict[str, Any]) -> Dict[str, int]:
+    """Calculate all statistics including streak (async version)"""
+    
+    # Get basic stats
+    stats = calculate_stats(user_data)
+    
+    # Add streak calculation
+    api = GitHubAccountStatsAPI()
+    stats['streak'] = await api.calculate_streak(user_data['contributionsCollection']['contributionCalendar'])
     
     return stats
 
@@ -382,12 +525,12 @@ async def get_icon_svg(icon_type: str, username: str, theme: str, x: int = 420, 
     else:
         return ""
 
-async def create_rotating_icon_svg(icon1: str, icon2: str, username: str, theme: str, x: int = 420, y: int = 80, avatar_url: str = None, size: int = 80) -> str:
+async def create_rotating_icon_svg(icon1: str, icon2: str, username: str, theme: str, x: int = 420, y: int = 80, avatar_url: str = None, size: int = 80, streak_value: int = 0) -> str:
     """Create a rotating coin-like icon with two sides (Y-axis flip like a coin)"""
     
-    # Get the two different icon SVGs
-    icon1_content = await get_icon_svg(icon1, username, theme, 0, 0, avatar_url, size, 0)  # Position at 0,0 for relative positioning
-    icon2_content = await get_icon_svg(icon2, username, theme, 0, 0, avatar_url, size, 0)
+    # Get the two different icon SVGs with correct streak value
+    icon1_content = await get_icon_svg(icon1, username, theme, 0, 0, avatar_url, size, streak_value)  # Position at 0,0 for relative positioning
+    icon2_content = await get_icon_svg(icon2, username, theme, 0, 0, avatar_url, size, streak_value)
     
     return f'''<g transform="translate({x}, {y})">
         <g class="coin-container">
@@ -514,14 +657,35 @@ async def create_account_general_svg(
     api = GitHubAccountStatsAPI()
     user_data = await api.fetch_account_stats(username)
     
-    # Calculate stats
-    stats = calculate_stats(user_data)
+    # Determine which stats we actually need to calculate based on slots
+    needed_stats = set()
+    for slot in slots:
+        if slot:  # Skip None slots
+            needed_stats.add(slot)
     
-    # Get total commits (this is an approximation as GitHub doesn't provide exact total)
-    stats['commits_total'] = await api.fetch_total_commits(username)
+    # Check if we need streak for icon display
+    needs_streak_for_icon = 'streak' in icon or '+streak' in icon
+    if needs_streak_for_icon:
+        needed_stats.add('streak')
     
-    # Calculate streak
-    streak = await api.calculate_streak(user_data['contributionsCollection']['contributionCalendar'])
+    # Calculate only basic stats first (fast, no additional API calls)
+    stats = {}
+    if needed_stats.intersection(['stars', 'commits_year', 'pull_requests', 'code_reviews', 'issues', 'external_contributions']):
+        basic_stats = calculate_stats(user_data)
+        stats.update(basic_stats)
+    
+    # Only calculate expensive stats if needed
+    if 'commits_total' in needed_stats:
+        stats['commits_total'] = await api.fetch_total_commits(username)
+    
+    if 'code_reviews' in needed_stats:
+        # Note: code_reviews is already in basic stats, but fetch_total_code_reviews gets all-time data
+        stats['code_reviews'] = await api.fetch_total_code_reviews(username)
+    
+    # Calculate streak only if needed (for display or icon)
+    streak = 0
+    if 'streak' in needed_stats or needs_streak_for_icon:
+        streak = await api.calculate_streak(user_data['contributionsCollection']['contributionCalendar'])
     
     # Create icon section for right side - matching the image layout
     icon_svg = ""
@@ -547,7 +711,7 @@ async def create_account_general_svg(
     if '+' in icon:
         # Rotating icon with two sides - fixed optimal size
         icon1, icon2 = icon.split('+')
-        icon_svg = await create_rotating_icon_svg(icon1, icon2, username, theme, icon_x, icon_y, avatar_url, icon_size)
+        icon_svg = await create_rotating_icon_svg(icon1, icon2, username, theme, icon_x, icon_y, avatar_url, icon_size, streak)
     else:
         # Single icon - fixed optimal size
         if icon == "streak":
