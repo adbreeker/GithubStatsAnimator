@@ -38,13 +38,14 @@ class handler(BaseHTTPRequestHandler):
             
             # Available icon options  
             icon_options = [
-                'default', 'user', 'github', 'streak', 'default+github', 
-                'default+streak', 'github+streak', 'user+github', 'user+streak', 'github+user'
+                'user', 'github', 'streak', 'user+github', 
+                'user+streak', 'github+streak'
             ]
             
             # Get parameters with defaults
             theme = query_params.get('theme', ['dark'])[0]
-            icon = query_params.get('icon', ['default'])[0]
+            icon = query_params.get('icon', ['user'])[0]
+            animation_time = float(query_params.get('animation_time', ['8'])[0])
             slot1 = query_params.get('slot1', ['stars'])[0]
             slot2 = query_params.get('slot2', ['commits_total'])[0]
             slot3 = query_params.get('slot3', ['commits_year'])[0]
@@ -57,6 +58,9 @@ class handler(BaseHTTPRequestHandler):
             
             if icon not in icon_options:
                 raise ValueError(f"Invalid icon: {icon}")
+            
+            if animation_time < 1 or animation_time > 30:
+                raise ValueError(f"Invalid animation_time: {animation_time}. Must be between 1 and 30 seconds.")
             
             for slot_name, slot_value in [('slot1', slot1), ('slot2', slot2), ('slot3', slot3), ('slot4', slot4), ('slot5', slot5)]:
                 if slot_value not in slot_options:
@@ -75,6 +79,7 @@ class handler(BaseHTTPRequestHandler):
                 username=username,
                 theme=theme,
                 icon=icon,
+                animation_time=animation_time,
                 slots=slots
             ))
             

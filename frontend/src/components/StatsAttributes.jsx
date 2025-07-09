@@ -55,13 +55,12 @@ const StatsAttributes = ({ selectedStatsType, config, onConfigChange }) => {
   ];
 
   const iconOptions = [
-    'default',
+    'user',
     'github',
     'streak',
-    'default+github',
-    'default+streak',
-    'github+streak',
-    'default+github+streak'
+    'user+github',
+    'user+streak',
+    'github+streak'
   ];
 
   const repositorySlotOptions = [
@@ -219,10 +218,10 @@ const StatsAttributes = ({ selectedStatsType, config, onConfigChange }) => {
     );
   };
 
+  // ACCOUNT GENERAL ----------------------------------------------------------------------------------------------------------------- ACCOUNT GENERAL
   const renderAccountGeneralConfig = () => (
     <div className={styles.configSection}>
       <h4 className={styles.sectionTitle}>Account General Configuration</h4>
-      
       {/* Theme */}
       <div className={styles.configItem}>
         <label className={styles.label}>Theme:</label>
@@ -247,7 +246,7 @@ const StatsAttributes = ({ selectedStatsType, config, onConfigChange }) => {
         <label className={styles.label}>Icon:</label>
         <select
           className={styles.select}
-          value={config.icon || 'default'}
+          value={config.icon || 'user'}
           onChange={(e) => handleConfigUpdate('icon', e.target.value)}
         >
           {iconOptions.map(option => (
@@ -255,6 +254,21 @@ const StatsAttributes = ({ selectedStatsType, config, onConfigChange }) => {
           ))}
         </select>
       </div>
+
+      {/* Animation Time - only show for multi-icons */}
+      {(config.icon || 'user').includes('+') && (
+        <div className={styles.configItem}>
+          <label className={styles.label}>Animation Time (seconds):</label>
+          <NumberInput
+            value={config.animation_time || 8}
+            onChange={(e) => handleConfigUpdate('animation_time', parseFloat(e.target.value))}
+            min={1}
+            max={30}
+            step={0.1}
+            className={styles.numberInput}
+          />
+        </div>
+      )}
 
       {/* Slots 1-5 */}
       {[1, 2, 3, 4, 5].map((slotNum) => (
@@ -274,6 +288,7 @@ const StatsAttributes = ({ selectedStatsType, config, onConfigChange }) => {
     </div>
   );
 
+  // TOP LANGUAGES ----------------------------------------------------------------------------------------------------------------- TOP LANGUAGES
   const renderTopLanguagesConfig = () => (
     <div className={styles.configSection}>
       <h4 className={styles.sectionTitle}>Top Languages Configuration</h4>
@@ -404,6 +419,7 @@ const StatsAttributes = ({ selectedStatsType, config, onConfigChange }) => {
     </div>
   );
 
+  // REPOSITORIES ----------------------------------------------------------------------------------------------------------------- REPOSITORIES
   const renderRepositoriesConfig = () => (
     <div className={styles.configSection}>
       <h4 className={styles.sectionTitle}>Repositories Configuration</h4>
@@ -453,6 +469,7 @@ const StatsAttributes = ({ selectedStatsType, config, onConfigChange }) => {
     </div>
   );
 
+  // CONTRIBUTIONS GRAPH ----------------------------------------------------------------------------------------------------------------- CONTRIBUTIONS GRAPH
   const renderContributionsGraphConfig = () => (
     <div className={styles.configSection}>
       <h4 className={styles.sectionTitle}>Contributions Graph Configuration</h4>

@@ -431,7 +431,7 @@ async def generate_icon_svg(icon_type: str, username: str, theme: str, x: int, y
             </g>
         </g>'''
     
-    elif icon_type in ["default", "user"]:
+    elif icon_type == "user":
         # User avatar with fallback
         api = GitHubAccountStatsAPI()
         try:
@@ -491,7 +491,7 @@ async def generate_icon_svg(icon_type: str, username: str, theme: str, x: int, y
 
 async def create_rotating_icon_svg(icon1: str, icon2: str, username: str, theme: str, 
                                  x: int, y: int, avatar_url: str = None, size: int = 80, 
-                                 streak_value: int = 0) -> str:
+                                 streak_value: int = 0, animation_time: float = 8) -> str:
     """Create a rotating coin-like icon with two sides (Y-axis flip animation)."""
     # Generate both icon sides with proper streak value
     icon1_content = await generate_icon_svg(icon1, username, theme, 0, 0, avatar_url, size, streak_value)
@@ -505,29 +505,30 @@ async def create_rotating_icon_svg(icon1: str, icon2: str, username: str, theme:
     </g>
     <style>
         .coin-container {{
-            animation: coinFlip 8s infinite ease-in-out;
+            animation: coinFlip {animation_time}s infinite ease-in-out;
             transform-origin: {size//2}px {size//2}px;
         }}
-        .side-1 {{ animation: showSide1 8s infinite ease-in-out; }}
+        .side-1 {{ animation: showSide1 {animation_time}s infinite ease-in-out; }}
         .side-2 {{ 
-            animation: showSide2 8s infinite ease-in-out;
+            animation: showSide2 {animation_time}s infinite ease-in-out;
             opacity: 0;
             transform: scaleX(-1) translateX(-{size}px);
         }}
         @keyframes coinFlip {{
             0% {{ transform: rotateY(0deg); }}
-            12.5% {{ transform: rotateY(180deg); }}
+            45.45% {{ transform: rotateY(0deg); }}
             50% {{ transform: rotateY(180deg); }}
-            62.5% {{ transform: rotateY(360deg); }}
+            95.45% {{ transform: rotateY(180deg); }}
             100% {{ transform: rotateY(360deg); }}
         }}
         @keyframes showSide1 {{
-            0%, 6.24%, 56.25%, 100% {{ opacity: 1; }}
-            6.25%, 56.24% {{ opacity: 0; }}
+            0%, 47.72%, 97.73%, 100% {{ opacity: 1; }}
+            47.73%, 97.72% {{ opacity: 0; }}
         }}
         @keyframes showSide2 {{
-            0%, 6.24%, 56.25%, 100% {{ opacity: 0; }}
-            6.25%, 56.24% {{ opacity: 1; }}
+            0%, 47.72%, 97.73%, 100% {{ opacity: 0; }}
+            47.73%, 97.72% {{ opacity: 1; }}
+        }}
         }}
     </style>'''
 
@@ -577,18 +578,20 @@ def create_stat_item_svg(label: str, value: str, stat_type: str, x: int, y: int,
 
 async def create_account_general_svg(
     username: str,
-    icon: str = "default",
+    icon: str = "user",
     slots: List[str] = None,
-    theme: str = "dark"
+    theme: str = "dark",
+    animation_time: float = 8
 ) -> str:
     """
     Generate account general stats SVG with optimized performance.
     
     Args:
         username: GitHub username
-        icon: Icon type ('default', 'github', 'streak', 'user+streak', etc.)
+        icon: Icon type ('user', 'github', 'streak', 'user+github', etc.)
         slots: List of stats to display (max 5)
         theme: Theme ('dark' or 'light')
+        animation_duration: Duration of icon animation in seconds (default: 8)
     
     Returns:
         SVG string with user stats and icon
@@ -642,7 +645,7 @@ async def create_account_general_svg(
         # Rotating icon
         icon1, icon2 = icon.split('+')
         icon_svg = await create_rotating_icon_svg(
-            icon1, icon2, username, theme, icon_x, icon_y, avatar_url, icon_size, streak_value)
+            icon1, icon2, username, theme, icon_x, icon_y, avatar_url, icon_size, streak_value, animation_time)
     else:
         # Single icon
         icon_svg = await generate_icon_svg(

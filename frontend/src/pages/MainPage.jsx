@@ -9,7 +9,8 @@ const MainPage = () => {
   const [config, setConfig] = useState({
     theme: 'dark',
     slots: ['stars', 'commits_total', 'commits_year', 'pull_requests', 'issues'],
-    icon: 'default'
+    icon: 'user',
+    animation_time: 8
   });
 
   const getDefaultConfigForType = (type) => {
@@ -18,7 +19,8 @@ const MainPage = () => {
         return {
           theme: 'dark',
           slots: ['stars', 'commits_total', 'commits_year', 'pull_requests', 'issues'],
-          icon: 'default'
+          icon: 'user',
+          animation_time: 8
         };
       case 'Top Languages':
         return {

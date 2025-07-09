@@ -52,6 +52,7 @@ const StatsPreview = ({ selectedStatsType, config }) => {
       case 'Account General':
         if (config.theme) params.append('theme', config.theme);
         if (config.icon) params.append('icon', config.icon);
+        if (config.animation_time) params.append('animation_time', config.animation_time);
         if (config.slots) {
           config.slots.forEach((slot, index) => {
             if (slot !== 'none') {
@@ -96,7 +97,7 @@ const StatsPreview = ({ selectedStatsType, config }) => {
   const hasConfiguration = () => {
     switch (selectedStatsType) {
       case 'Account General':
-        return config.slots?.some(slot => slot !== 'none') || config.icon !== 'default';
+        return config.slots?.some(slot => slot !== 'none') || config.icon !== 'user';
       case 'Top Languages':
         return config.languages_count > 0 || config.exclude_languages?.length > 0;
       case 'Repositories':
@@ -110,7 +111,7 @@ const StatsPreview = ({ selectedStatsType, config }) => {
 
   const renderAccountGeneralPreview = () => {
     const activeSlots = config.slots?.filter(slot => slot !== 'none') || [];
-    const hasIcon = config.icon !== 'default';
+    const hasIcon = config.icon !== 'user';
 
     return (
       <div className={styles.mockProfile}>
