@@ -16,11 +16,19 @@ const StatsPreview = ({ selectedStatsType, config }) => {
       const apiEndpoint = getApiEndpoint();
       const queryParams = buildQueryParams();
       const response = await fetch(`${apiEndpoint}?${queryParams}`);
-      
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        // Try to extract error message from JSON, fallback to status
+        let errorMsg = `HTTP error! status: ${response.status}`;
+        try {
+          const data = await response.json();
+          if (data && data.error) {
+            errorMsg = data.error;
+          }
+        } catch (e) {
+          // fallback: keep status message
+        }
+        throw new Error(errorMsg);
       }
-      
       const svgText = await response.text();
       setSvgContent(svgText);
     } catch (err) {
@@ -49,18 +57,21 @@ const StatsPreview = ({ selectedStatsType, config }) => {
     const params = new URLSearchParams();
     
     switch (selectedStatsType) {
-      case 'Account General':
+      case 'Account General': {
         if (config.theme) params.append('theme', config.theme);
         if (config.icon) params.append('icon', config.icon);
-        if (config.animation_time) params.append('animation_time', config.animation_time);
-        if (config.slots) {
-          config.slots.forEach((slot, index) => {
-            if (slot !== 'none') {
-              params.append(`slot${index + 1}`, slot);
-            }
-          });
+        // Always send all 5 slots, even if 'none', to match backend expectations
+        const slots = config.slots || [];
+        for (let i = 0; i < 5; i++) {
+          const slotValue = slots[i] || 'none';
+          params.append(`slot${i + 1}`, slotValue);
+        }
+        // Only send animation_time if icon includes '+' (multi-icon)
+        if ((config.icon || 'user').includes('+') && config.animation_time) {
+          params.append('animation_time', config.animation_time);
         }
         break;
+      }
         
       case 'Top Languages':
         if (config.theme) params.append('theme', config.theme);

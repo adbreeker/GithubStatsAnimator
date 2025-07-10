@@ -286,7 +286,7 @@ class GitHubAccountStatsAPI:
             # Add streak data
             if 'streak' in needed_stats and 'contributionCalendar' in alltime_user:
                 user_data['contributionCalendar'] = alltime_user['contributionCalendar']['contributionCalendar']
-                user_data['currentStreak'] = await self.calculate_streak(user_data['contributionCalendar'])
+                user_data['currentStreak'] = await calculate_streak(user_data['contributionCalendar'])
         
         return user_data
 
@@ -335,7 +335,7 @@ def calculate_basic_stats(user_data: Dict[str, Any]) -> Dict[str, int]:
     return stats
 
 
-async def calculate_streak(self, contributions_calendar: Dict) -> int:
+async def calculate_streak(contributions_calendar: Dict) -> int:
     """
     Calculate current contribution streak from calendar data.
 
@@ -639,7 +639,7 @@ async def generate_account_general_svg(
     user_data = await api.fetch_account_stats(username, needed_stats)
     
     # Calculate all stats from the consolidated data
-    stats = await calculate_basic_stats(user_data)
+    stats = calculate_basic_stats(user_data)
     
     # Layout positioning
     padding = 20
