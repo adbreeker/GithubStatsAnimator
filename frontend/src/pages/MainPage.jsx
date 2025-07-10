@@ -8,7 +8,7 @@ const MainPage = () => {
   const [selectedStatsType, setSelectedStatsType] = useState('Account General');
   const [config, setConfig] = useState({
     theme: 'dark',
-    slots: ['stars', 'commits_total', 'commits_year', 'pull_requests', 'issues'],
+    slots: ['stars', 'commits_total', 'commits_current_year', 'pull_requests', 'issues'],
     icon: 'user',
     animation_time: 8
   });
@@ -18,7 +18,7 @@ const MainPage = () => {
       case 'Account General':
         return {
           theme: 'dark',
-          slots: ['stars', 'commits_total', 'commits_year', 'pull_requests', 'issues'],
+          slots: ['stars', 'commits_total', 'commits_current_year', 'pull_requests', 'issues'],
           icon: 'user',
           animation_time: 8
         };

@@ -47,7 +47,7 @@ const StatsAttributes = ({ selectedStatsType, config, onConfigChange }) => {
     'none',
     'stars',
     'commits_total',
-    'commits_year',
+    'commits_current_year',
     'pull_requests',
     'code_reviews',
     'issues',
@@ -276,7 +276,7 @@ const StatsAttributes = ({ selectedStatsType, config, onConfigChange }) => {
           <label className={styles.label}>Slot {slotNum}:</label>
           <select
             className={styles.select}
-            value={config.slots?.[slotNum - 1] || (slotNum === 1 ? 'stars' : slotNum === 2 ? 'commits_total' : slotNum === 3 ? 'commits_year' : slotNum === 4 ? 'pull_requests' : 'issues')}
+            value={config.slots?.[slotNum - 1] || (slotNum === 1 ? 'stars' : slotNum === 2 ? 'commits_total' : slotNum === 3 ? 'commits_current_year' : slotNum === 4 ? 'pull_requests' : 'issues')}
             onChange={(e) => handleSlotUpdate(slotNum - 1, e.target.value)}
           >
             {slotOptions.map(option => (

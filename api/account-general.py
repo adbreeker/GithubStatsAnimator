@@ -32,7 +32,7 @@ class handler(BaseHTTPRequestHandler):
             
             # Available slot options
             slot_options = [
-                'stars', 'commits_total', 'commits_year', 'pull_requests', 
+                'stars', 'commits_total', 'commits_current_year', 'pull_requests', 
                 'code_reviews', 'issues', 'external_contributions'
             ]
             

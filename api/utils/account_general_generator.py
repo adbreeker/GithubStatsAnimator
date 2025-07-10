@@ -57,7 +57,7 @@ STAT_CONFIGS = {
         'description': 'All-time commits (requires year-by-year API calls)',
         'expensive': True
     },
-    'commits_year': {
+    'commits_current_year': {
         'label': f'Commits ({datetime.now().year})',
         'description': 'Commits in current year',
         'expensive': False
@@ -203,8 +203,8 @@ class GitHubAccountStatsAPI:
         # Build second query parts based on needed stats
         second_query_parts = []
         
-        # Always include current year commits if commits_year is needed
-        if 'commits_year' in needed_stats:
+        # Always include current year commits if commits_current_year is needed
+        if 'commits_current_year' in needed_stats:
             second_query_parts.append(f"""currentYearCommits: contributionsCollection(from: "{current_year_start}") {{
               totalCommitContributions
             }}""")
@@ -259,7 +259,7 @@ class GitHubAccountStatsAPI:
             alltime_user = alltime_data['user']
             
             # Add current year commits to user_data
-            if 'commits_year' in needed_stats and 'currentYearCommits' in alltime_user:
+            if 'commits_current_year' in needed_stats and 'currentYearCommits' in alltime_user:
                 user_data['currentYearCommits'] = alltime_user['currentYearCommits']['totalCommitContributions']
             
             # Process year-by-year all-time data
@@ -315,9 +315,9 @@ def calculate_basic_stats(user_data: Dict[str, Any]) -> Dict[str, int]:
     
     # Current year commits (if available from second query)
     if 'currentYearCommits' in user_data:
-        stats['commits_year'] = user_data['currentYearCommits']
+        stats['commits_current_year'] = user_data['currentYearCommits']
     else:
-        stats['commits_year'] = 0
+        stats['commits_current_year'] = 0
     
     # Pull requests (use all-time data from pullRequests field)
     stats['pull_requests'] = user_data.get('pullRequests', {}).get('totalCount', 0)
@@ -512,7 +512,7 @@ def get_stat_icon_svg(stat_type: str, theme: str) -> str:
         
         'commits_total': f'<path d="M3 2.75A2.75 2.75 0 015.75 0h4.5A2.75 2.75 0 0113 2.75v10.5A2.75 2.75 0 0110.25 16h-4.5A2.75 2.75 0 013 13.25V2.75zm2.75-1.25a1.25 1.25 0 00-1.25 1.25v10.5c0 .69.56 1.25 1.25 1.25h4.5c.69 0 1.25-.56 1.25-1.25V2.75c0-.69-.56-1.25-1.25-1.25h-4.5z" fill="{colors["accent"]}"/><path d="M6.5 5.5a.5.5 0 01.5-.5h2a.5.5 0 010 1H7a.5.5 0 01-.5-.5zm0 2a.5.5 0 01.5-.5h2a.5.5 0 010 1H7a.5.5 0 01-.5-.5zm0 2a.5.5 0 01.5-.5h2a.5.5 0 010 1H7a.5.5 0 01-.5-.5z" fill="{colors["accent"]}"/>',
         
-        'commits_year': f'<path d="M3 2.75A2.75 2.75 0 015.75 0h4.5A2.75 2.75 0 0113 2.75v10.5A2.75 2.75 0 0110.25 16h-4.5A2.75 2.75 0 013 13.25V2.75zm2.75-1.25a1.25 1.25 0 00-1.25 1.25v10.5c0 .69.56 1.25 1.25 1.25h4.5c.69 0 1.25-.56 1.25-1.25V2.75c0-.69-.56-1.25-1.25-1.25h-4.5z" fill="{colors["success"]}"/><path d="M6.5 5.5a.5.5 0 01.5-.5h2a.5.5 0 010 1H7a.5.5 0 01-.5-.5zm0 2a.5.5 0 01.5-.5h2a.5.5 0 010 1H7a.5.5 0 01-.5-.5zm0 2a.5.5 0 01.5-.5h2a.5.5 0 010 1H7a.5.5 0 01-.5-.5z" fill="{colors["success"]}"/>',
+        'commits_current_year': f'<path d="M3 2.75A2.75 2.75 0 015.75 0h4.5A2.75 2.75 0 0113 2.75v10.5A2.75 2.75 0 0110.25 16h-4.5A2.75 2.75 0 013 13.25V2.75zm2.75-1.25a1.25 1.25 0 00-1.25 1.25v10.5c0 .69.56 1.25 1.25 1.25h4.5c.69 0 1.25-.56 1.25-1.25V2.75c0-.69-.56-1.25-1.25-1.25h-4.5z" fill="{colors["success"]}"/><path d="M6.5 5.5a.5.5 0 01.5-.5h2a.5.5 0 010 1H7a.5.5 0 01-.5-.5zm0 2a.5.5 0 01.5-.5h2a.5.5 0 010 1H7a.5.5 0 01-.5-.5zm0 2a.5.5 0 01.5-.5h2a.5.5 0 010 1H7a.5.5 0 01-.5-.5z" fill="{colors["success"]}"/>',
         
         'pull_requests': f'<path d="M1.5 3.25a2.25 2.25 0 113 2.122v5.256a2.251 2.251 0 11-1.5 0V5.372A2.25 2.25 0 011.5 3.25zm5.677-.177L9.573.677A.25.25 0 0110 .854v4.792a.25.25 0 01-.427.177L7.177 3.427a.25.25 0 010-.354zM3.75 2.5a.75.75 0 100 1.5.75.75 0 000-1.5zm0 9.5a.75.75 0 100 1.5.75.75 0 000-1.5z" fill="{colors["accent"]}"/>',
         
@@ -616,7 +616,7 @@ async def generate_account_general_svg(
     """
     # Set default slots if none provided
     if slots is None:
-        slots = ['stars', 'commits_total', 'commits_year', 'pull_requests', 'issues']
+        slots = ['stars', 'commits_total', 'commits_current_year', 'pull_requests', 'issues']
     
     # Ensure exactly 5 slots, padding with None if needed
     while len(slots) < 5:
