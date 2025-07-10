@@ -23,7 +23,14 @@ sys.path.insert(0, str(project_root))
 sys.path.insert(0, str(project_root / "api"))
 sys.path.insert(0, str(project_root / "api" / "utils"))
 
-from api.utils.account_general_generator import create_account_general_svg
+from api.utils.account_general_generator import (
+    generate_account_general_svg,
+    GitHubAccountStatsAPI,
+    calculate_basic_stats,
+    create_account_general_svg,
+    THEMES,
+    STAT_CONFIGS,
+)
 
 # Absolute path to results directory
 RESULTS_DIR = project_root / "tests" / "results"
@@ -38,7 +45,7 @@ class AccountGeneralTester:
     
     async def test_all_icon_types(self):
         """Generate one SVG for each icon type with specific controlled configurations."""
-        
+
         # Define specific test configurations for each icon type
         test_configs = [
             {
@@ -72,33 +79,78 @@ class AccountGeneralTester:
                 'animation_duration': 2.5  # faster
             }
         ]
-        
+
+        # --- Fetch all data and stats ONCE ---
+        needed_stats = set()
+        for config in test_configs:
+            for slot in config['slots']:
+                if slot:
+                    needed_stats.add(slot)
+            if 'streak' in config['icon'] or '+streak' in config['icon']:
+                needed_stats.add('streak')
+        api = GitHubAccountStatsAPI()
+        user_data = await api.fetch_account_stats(self.test_username, needed_stats)
+        stats = calculate_basic_stats(user_data)
+        # Print all stats including account creation year
+        print("\n--- Account General Stats for:", self.test_username, "---")
+        print("Account creation date:", user_data.get('createdAt', 'N/A'))
+        for key, value in stats.items():
+            print(f"{key}: {value}")
+        print("---------------------------------------------\n")
+
+        # --- Generate SVGs using cached data ---
+        from api.utils.account_general_generator import generate_icon_svg, create_rotating_icon_svg
+        width, height = 400, 200
+        padding = 20
+        title_height = 35
+        title_x = padding + 10
+        stats_x = padding + 10
+        stats_start_y = title_height + 20
+        stats_spacing = 25
+        icon_size = 80
+        icon_x = width - icon_size - padding - 10
+        third_row_y = stats_start_y + (2 * stats_spacing)
+        icon_y = third_row_y - (icon_size // 2) + 5
+        avatar_url = user_data.get('avatarUrl')
+        streak_value = stats.get('streak', 0)
+
         for i, config in enumerate(test_configs):
             try:
                 icon = config['icon']
                 slots = config['slots']
                 animation_duration = config['animation_duration']
-                
-                # Use alternating themes for variety
                 theme = 'dark' if i % 2 == 0 else 'light'
-                
-                svg_content = await create_account_general_svg(
-                    username=self.test_username,
-                    icon=icon,
-                    slots=slots,
-                    theme=theme,
-                    animation_time=animation_duration
-                )
-                
+                colors = THEMES[theme]
+                # Ensure exactly 5 slots
+                slots = (slots + [None]*5)[:5]
+                # Prepare stat items
+                stat_items = []
+                stats_width = width - stats_x - icon_size - padding
+                for idx, slot in enumerate(slots):
+                    if slot is None:
+                        continue
+                    value = stats.get(slot, 0)
+                    label = STAT_CONFIGS.get(slot, {}).get('label', slot.replace('_', ' ').title())
+                    from api.utils.account_general_generator import format_number, create_stat_item_svg
+                    formatted_value = format_number(value)
+                    x = stats_x
+                    y = stats_start_y + (idx * stats_spacing)
+                    stat_items.append(create_stat_item_svg(label, formatted_value, slot, x, y, theme, stats_width))
+                # Icon SVG
+                if '+' in icon:
+                    icon1, icon2 = icon.split('+')
+                    icon_svg = await create_rotating_icon_svg(
+                        icon1, icon2, self.test_username, theme, icon_x, icon_y, avatar_url, icon_size, streak_value, animation_duration)
+                else:
+                    icon_svg = await generate_icon_svg(
+                        icon, self.test_username, theme, icon_x, icon_y, avatar_url, icon_size, streak_value)
+                svg_content = create_account_general_svg(
+                    self.test_username, user_data, icon_svg, stat_items, title_x, colors)
                 filename = f"account_general_{i+1}_{icon.replace('+', '_')}_{self.timestamp}.svg"
                 filepath = RESULTS_DIR / filename
-                
                 with open(filepath, 'w', encoding='utf-8') as f:
                     f.write(svg_content)
-                
-                # Filter out None values from slots for display and storage
                 clean_slots = [slot for slot in slots if slot is not None]
-                
                 self.results.append({
                     'test': f'Icon Type {i+1}: {icon}',
                     'status': 'PASS',
@@ -115,7 +167,6 @@ class AccountGeneralTester:
                 print(f"   Theme: {theme}, Slots: {len(clean_slots)} ({', '.join(clean_slots) if clean_slots else 'none'})")
                 if '+' in icon:
                     print(f"   Animation Duration: {animation_duration}s")
-                
             except Exception as e:
                 icon_name = config.get('icon', 'unknown')
                 self.results.append({

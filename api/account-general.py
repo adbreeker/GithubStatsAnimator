@@ -8,7 +8,7 @@ from http.server import BaseHTTPRequestHandler
 from urllib.parse import urlparse, parse_qs
 import json
 import asyncio
-from utils.account_general_generator import create_account_general_svg
+from utils.account_general_generator import generate_account_general_svg
 
 class handler(BaseHTTPRequestHandler):
     def do_GET(self):
@@ -74,8 +74,8 @@ class handler(BaseHTTPRequestHandler):
             slots = [slot1, slot2, slot3, slot4, slot5]
             # Remove any 'none' values and keep only first 5
             slots = [slot for slot in slots if slot != 'none'][:5]
-            
-            svg_content = loop.run_until_complete(create_account_general_svg(
+
+            svg_content = loop.run_until_complete(generate_account_general_svg(
                 username=username,
                 theme=theme,
                 icon=icon,
