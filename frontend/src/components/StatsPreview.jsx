@@ -57,21 +57,18 @@ const StatsPreview = ({ selectedStatsType, config }) => {
     const params = new URLSearchParams();
     
     switch (selectedStatsType) {
-      case 'Account General': {
+      case 'Account General':
         if (config.theme) params.append('theme', config.theme);
         if (config.icon) params.append('icon', config.icon);
-        // Always send all 5 slots, even if 'none', to match backend expectations
-        const slots = config.slots || [];
-        for (let i = 0; i < 5; i++) {
-          const slotValue = slots[i] || 'none';
-          params.append(`slot${i + 1}`, slotValue);
-        }
-        // Only send animation_time if icon includes '+' (multi-icon)
-        if ((config.icon || 'user').includes('+') && config.animation_time) {
-          params.append('animation_time', config.animation_time);
+        if (config.animation_time) params.append('animation_time', config.animation_time);
+        if (config.slots) {
+          config.slots.forEach((slot, index) => {
+            if (slot !== 'none') {
+              params.append(`slot${index + 1}`, slot);
+            }
+          });
         }
         break;
-      }
         
       case 'Top Languages':
         if (config.theme) params.append('theme', config.theme);
