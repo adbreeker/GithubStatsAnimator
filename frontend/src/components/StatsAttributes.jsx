@@ -48,6 +48,7 @@ const StatsAttributes = ({ selectedStatsType, config, onConfigChange }) => {
     'stars',
     'commits_total',
     'commits_current_year',
+    'commits_6_months',
     'pull_requests',
     'code_reviews',
     'issues',

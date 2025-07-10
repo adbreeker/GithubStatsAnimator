@@ -50,12 +50,12 @@ class AccountGeneralTester:
         test_configs = [
             {
                 'icon': 'user',
-                'slots': ['stars', 'commits_total', 'commits_current_year', 'pull_requests', 'code_reviews'],
+                'slots': ['stars', 'commits_total', 'commits_current_year', 'commits_6_months', 'pull_requests'],
                 'animation_duration': 8
             },
             {
                 'icon': 'github',
-                'slots': ['issues', 'external_contributions', None, None, None],
+                'slots': ['pull_requests', 'issues', 'external_contributions', None, None],
                 'animation_duration': 8
             },
             {

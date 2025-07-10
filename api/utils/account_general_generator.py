@@ -47,6 +47,11 @@ THEMES = {
 
 # Stat type configurations with labels and descriptions
 STAT_CONFIGS = {
+    'commits_6_months': {
+        'label': 'Commits (6 months)',
+        'description': 'Commits in the last 6 months',
+        'expensive': False
+    },
     'stars': {
         'label': 'Total Stars',
         'description': 'Total stars across all repositories',
@@ -208,6 +213,12 @@ class GitHubAccountStatsAPI:
             second_query_parts.append(f"""currentYearCommits: contributionsCollection(from: "{current_year_start}") {{
               totalCommitContributions
             }}""")
+        # Add last 6 months commits if needed
+        if 'commits_6_months' in needed_stats:
+            six_months_ago = (today - timedelta(days=183)).isoformat()
+            second_query_parts.append(f"""last6MonthsCommits: contributionsCollection(from: "{six_months_ago}") {{
+              totalCommitContributions
+            }}""")
         
         # Add all-time data if needed (year by year chunks)
         if 'commits_total' in needed_stats or 'code_reviews' in needed_stats:
@@ -261,6 +272,9 @@ class GitHubAccountStatsAPI:
             # Add current year commits to user_data
             if 'commits_current_year' in needed_stats and 'currentYearCommits' in alltime_user:
                 user_data['currentYearCommits'] = alltime_user['currentYearCommits']['totalCommitContributions']
+            # Add last 6 months commits to user_data
+            if 'commits_6_months' in needed_stats and 'last6MonthsCommits' in alltime_user:
+                user_data['last6MonthsCommits'] = alltime_user['last6MonthsCommits']['totalCommitContributions']
             
             # Process year-by-year all-time data
             if 'commits_total' in needed_stats or 'code_reviews' in needed_stats:
@@ -318,6 +332,11 @@ def calculate_basic_stats(user_data: Dict[str, Any]) -> Dict[str, int]:
         stats['commits_current_year'] = user_data['currentYearCommits']
     else:
         stats['commits_current_year'] = 0
+
+    if 'last6MonthsCommits' in user_data:
+        stats['commits_6_months'] = user_data['last6MonthsCommits']
+    else:
+        stats['commits_6_months'] = 0
     
     # Pull requests (use all-time data from pullRequests field)
     stats['pull_requests'] = user_data.get('pullRequests', {}).get('totalCount', 0)
@@ -513,6 +532,8 @@ def get_stat_icon_svg(stat_type: str, theme: str) -> str:
         'commits_total': f'<path d="M3 2.75A2.75 2.75 0 015.75 0h4.5A2.75 2.75 0 0113 2.75v10.5A2.75 2.75 0 0110.25 16h-4.5A2.75 2.75 0 013 13.25V2.75zm2.75-1.25a1.25 1.25 0 00-1.25 1.25v10.5c0 .69.56 1.25 1.25 1.25h4.5c.69 0 1.25-.56 1.25-1.25V2.75c0-.69-.56-1.25-1.25-1.25h-4.5z" fill="{colors["accent"]}"/><path d="M6.5 5.5a.5.5 0 01.5-.5h2a.5.5 0 010 1H7a.5.5 0 01-.5-.5zm0 2a.5.5 0 01.5-.5h2a.5.5 0 010 1H7a.5.5 0 01-.5-.5zm0 2a.5.5 0 01.5-.5h2a.5.5 0 010 1H7a.5.5 0 01-.5-.5z" fill="{colors["accent"]}"/>',
         
         'commits_current_year': f'<path d="M3 2.75A2.75 2.75 0 015.75 0h4.5A2.75 2.75 0 0113 2.75v10.5A2.75 2.75 0 0110.25 16h-4.5A2.75 2.75 0 013 13.25V2.75zm2.75-1.25a1.25 1.25 0 00-1.25 1.25v10.5c0 .69.56 1.25 1.25 1.25h4.5c.69 0 1.25-.56 1.25-1.25V2.75c0-.69-.56-1.25-1.25-1.25h-4.5z" fill="{colors["success"]}"/><path d="M6.5 5.5a.5.5 0 01.5-.5h2a.5.5 0 010 1H7a.5.5 0 01-.5-.5zm0 2a.5.5 0 01.5-.5h2a.5.5 0 010 1H7a.5.5 0 01-.5-.5zm0 2a.5.5 0 01.5-.5h2a.5.5 0 010 1H7a.5.5 0 01-.5-.5z" fill="{colors["success"]}"/>',
+
+        'commits_6_months': f'<path d="M3 2.75A2.75 2.75 0 015.75 0h4.5A2.75 2.75 0 0113 2.75v10.5A2.75 2.75 0 0110.25 16h-4.5A2.75 2.75 0 013 13.25V2.75zm2.75-1.25a1.25 1.25 0 00-1.25 1.25v10.5c0 .69.56 1.25 1.25 1.25h4.5c.69 0 1.25-.56 1.25-1.25V2.75c0-.69-.56-1.25-1.25-1.25h-4.5z" fill="{colors["success"]}"/><path d="M6.5 5.5a.5.5 0 01.5-.5h2a.5.5 0 010 1H7a.5.5 0 01-.5-.5zm0 2a.5.5 0 01.5-.5h2a.5.5 0 010 1H7a.5.5 0 01-.5-.5zm0 2a.5.5 0 01.5-.5h2a.5.5 0 010 1H7a.5.5 0 01-.5-.5z" fill="{colors["success"]}"/>',
         
         'pull_requests': f'<path d="M1.5 3.25a2.25 2.25 0 113 2.122v5.256a2.251 2.251 0 11-1.5 0V5.372A2.25 2.25 0 011.5 3.25zm5.677-.177L9.573.677A.25.25 0 0110 .854v4.792a.25.25 0 01-.427.177L7.177 3.427a.25.25 0 010-.354zM3.75 2.5a.75.75 0 100 1.5.75.75 0 000-1.5zm0 9.5a.75.75 0 100 1.5.75.75 0 000-1.5z" fill="{colors["accent"]}"/>',
         
