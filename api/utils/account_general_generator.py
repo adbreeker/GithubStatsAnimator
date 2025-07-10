@@ -556,7 +556,7 @@ def create_stat_item_svg(label: str, value: str, stat_type: str, x: int, y: int,
     # Layout positioning
     icon_size = 14
     label_start = icon_size + 8
-    value_x = 140
+    value_x = 150
     
     return f'''<g transform="translate({x}, {y})">
         <g transform="translate(0, 0)">
