@@ -175,8 +175,8 @@ dmypy.json
 cython_debug/
 
 # Test results and artifacts
-tests/
-test-results/
+tests/results/
+test/results/
 *.svg
 *.png
 *.gif

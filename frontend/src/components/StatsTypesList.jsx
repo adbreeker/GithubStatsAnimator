@@ -16,10 +16,8 @@ const StatsTypesList = ({ selectedType, onTypeSelect }) => {
         {statsTypes.map((type) => (
           <button
             key={type}
-            className={`${styles.typeButton} ${
-              selectedType === type ? styles.active : ''
-            }`}
-            onClick={() => onTypeSelect(type)}
+            className={`${styles.typeButton} ${type === 'Repositories' ? styles.disabled : ''} ${selectedType === type ? styles.active : ''}`}
+            onClick={type === 'Repositories' ? undefined : () => onTypeSelect(type)}
           >
             {type}
           </button>

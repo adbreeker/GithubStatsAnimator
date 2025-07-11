@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import styles from '../styles/statsPreview.module.css';
 
 const StatsPreview = ({ selectedStatsType, config }) => {
@@ -6,21 +6,32 @@ const StatsPreview = ({ selectedStatsType, config }) => {
   const [svgContent, setSvgContent] = useState(null);
   const [error, setError] = useState(null);
 
+  // Debounce timer ref
+  const debounceTimerRef = useRef(null);
+
   const generatePreview = async () => {
     if (!hasConfiguration()) return;
-    
+
     setIsLoading(true);
     setError(null);
-    
+
     try {
       const apiEndpoint = getApiEndpoint();
       const queryParams = buildQueryParams();
       const response = await fetch(`${apiEndpoint}?${queryParams}`);
-      
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        // Try to extract error message from JSON, fallback to status
+        let errorMsg = `HTTP error! status: ${response.status}`;
+        try {
+          const data = await response.json();
+          if (data && data.error) {
+            errorMsg = data.error;
+          }
+        } catch (e) {
+          // fallback: keep status message
+        }
+        throw new Error(errorMsg);
       }
-      
       const svgText = await response.text();
       setSvgContent(svgText);
     } catch (err) {
@@ -52,6 +63,10 @@ const StatsPreview = ({ selectedStatsType, config }) => {
       case 'Account General':
         if (config.theme) params.append('theme', config.theme);
         if (config.icon) params.append('icon', config.icon);
+        // Only include animation_time if the animation time field is visible (multi-icon)
+        if ((config.icon || 'user').includes('+') && config.animation_time) {
+          params.append('animation_time', config.animation_time);
+        }
         if (config.slots) {
           config.slots.forEach((slot, index) => {
             if (slot !== 'none') {
@@ -88,15 +103,31 @@ const StatsPreview = ({ selectedStatsType, config }) => {
   };
 
   useEffect(() => {
-    if (config && Object.keys(config).length > 0) {
-      generatePreview();
+    // When stats change, set loading immediately
+    if (config && Object.keys(config).length > 0 && hasConfiguration()) {
+      setIsLoading(true);
     }
+    // Debounce preview generation
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
+    debounceTimerRef.current = setTimeout(() => {
+      if (config && Object.keys(config).length > 0 && hasConfiguration()) {
+        generatePreview();
+      }
+    }, 500);
+    // Cleanup on unmount
+    return () => {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+    };
   }, [selectedStatsType, config]);
 
   const hasConfiguration = () => {
     switch (selectedStatsType) {
       case 'Account General':
-        return config.slots?.some(slot => slot !== 'none') || config.icon !== 'default';
+        return config.slots?.some(slot => slot !== 'none') || config.icon !== 'user';
       case 'Top Languages':
         return config.languages_count > 0 || config.exclude_languages?.length > 0;
       case 'Repositories':
@@ -110,7 +141,7 @@ const StatsPreview = ({ selectedStatsType, config }) => {
 
   const renderAccountGeneralPreview = () => {
     const activeSlots = config.slots?.filter(slot => slot !== 'none') || [];
-    const hasIcon = config.icon !== 'default';
+    const hasIcon = config.icon !== 'user';
 
     return (
       <div className={styles.mockProfile}>
@@ -269,24 +300,22 @@ const StatsPreview = ({ selectedStatsType, config }) => {
   return (
     <div className={styles.previewContainer}>
       <div className={styles.header}>
-        <h3 className={styles.title}>Stats Preview</h3>
-        <div className={styles.headerActions}>
-          <div className={styles.configInfo}>
-            <span className={styles.statsType}>{selectedStatsType}</span>
-            <span className={styles.configStatus}>
-              {hasConfiguration() ? 'Configured' : 'Not configured'}
-            </span>
-          </div>
-          {svgContent && (
-            <div className={styles.actionButtons}>
-              <button onClick={downloadSVG} className={styles.actionButton}>
-                📥 Download SVG
-              </button>
-              <button onClick={copyApiUrl} className={styles.actionButton}>
-                🔗 Copy API URL
-              </button>
+        <div style={{ display: 'flex', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', width: '100%' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
+            <h3 className={styles.title}>Stats Preview</h3>
+            <div className={styles.apiInfo}>
+              <span className={styles.badge} style={{ fontSize: '9px', padding: '2px 4px', lineHeight: '1.5' }}>Live Data</span>
+              <span style={{ marginLeft: 2, fontSize: '9px', lineHeight: '1.2' }}>Connected to GitHub API</span>
             </div>
-          )}
+          </div>
+          <div className={styles.headerActions}>
+            <div className={styles.configInfo}>
+              <span className={styles.statsType}>{selectedStatsType}</span>
+              <span className={styles.configStatus}>
+                {hasConfiguration() ? 'Configured' : 'Not configured'}
+              </span>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -320,20 +349,28 @@ const StatsPreview = ({ selectedStatsType, config }) => {
           </div>
         )}
       </div>
-
-      <div className={styles.actions}>
-        <button onClick={downloadSVG} className={styles.actionButton}>
-          Download SVG
-        </button>
-        <button onClick={copyApiUrl} className={styles.actionButton}>
-          Copy API URL
-        </button>
+      {/* API Link at the bottom */}
+      <div className={styles.apiBar}>
+        <span className={styles.apiLink}>{`${window.location.origin}${getApiEndpoint()}?${buildQueryParams()}`}</span>
       </div>
-
-      {/* API Integration Complete - Real GitHub Stats */}
-      <div className={styles.apiInfo}>
-        <span className={styles.badge}>Live Data</span>
-        Connected to GitHub API
+      {/* Action Buttons below the API bar */}
+      <div className={styles.actionButtons} style={{ marginTop: 8 }}>
+        <button
+          className={styles.actionButton}
+          onClick={copyApiUrl}
+          type="button"
+        >
+          Copy URL
+        </button>
+        <button
+          className={styles.actionButton}
+          onClick={downloadSVG}
+          type="button"
+          disabled={!svgContent}
+          title={!svgContent ? 'No SVG generated yet' : 'Save as SVG'}
+        >
+          Save as SVG
+        </button>
       </div>
     </div>
   );

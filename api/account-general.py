@@ -8,7 +8,7 @@ from http.server import BaseHTTPRequestHandler
 from urllib.parse import urlparse, parse_qs
 import json
 import asyncio
-from utils.account_general_generator import create_account_general_svg
+from utils.account_general_generator import generate_account_general_svg
 
 class handler(BaseHTTPRequestHandler):
     def do_GET(self):
@@ -32,24 +32,25 @@ class handler(BaseHTTPRequestHandler):
             
             # Available slot options
             slot_options = [
-                'stars', 'commits_total', 'commits_year', 'pull_requests', 
+                'stars', 'commits_total', 'commits_current_year', 'commits_6_months', 'pull_requests', 
                 'code_reviews', 'issues', 'external_contributions'
             ]
             
             # Available icon options  
             icon_options = [
-                'default', 'user', 'github', 'streak', 'default+github', 
-                'default+streak', 'github+streak', 'user+github', 'user+streak', 'github+user'
+                'user', 'github', 'streak', 'user+github', 
+                'user+streak', 'github+streak'
             ]
             
             # Get parameters with defaults
             theme = query_params.get('theme', ['dark'])[0]
-            icon = query_params.get('icon', ['default'])[0]
-            slot1 = query_params.get('slot1', ['stars'])[0]
-            slot2 = query_params.get('slot2', ['commits_total'])[0]
-            slot3 = query_params.get('slot3', ['commits_year'])[0]
-            slot4 = query_params.get('slot4', ['pull_requests'])[0]
-            slot5 = query_params.get('slot5', ['issues'])[0]
+            icon = query_params.get('icon', ['user'])[0]
+            animation_time = float(query_params.get('animation_time', ['8'])[0])
+            slot1 = query_params.get('slot1', [None])[0]
+            slot2 = query_params.get('slot2', [None])[0]
+            slot3 = query_params.get('slot3', [None])[0]
+            slot4 = query_params.get('slot4', [None])[0]
+            slot5 = query_params.get('slot5', [None])[0]
             
             # Validate parameters
             if theme not in ['light', 'dark']:
@@ -58,23 +59,26 @@ class handler(BaseHTTPRequestHandler):
             if icon not in icon_options:
                 raise ValueError(f"Invalid icon: {icon}")
             
+            if animation_time < 1 or animation_time > 30:
+                raise ValueError(f"Invalid animation_time: {animation_time}. Must be between 1 and 30 seconds.")
+            
             for slot_name, slot_value in [('slot1', slot1), ('slot2', slot2), ('slot3', slot3), ('slot4', slot4), ('slot5', slot5)]:
-                if slot_value not in slot_options:
+                if slot_value is not None and slot_value not in slot_options:
                     raise ValueError(f"Invalid {slot_name}: {slot_value}")
             
             # Generate SVG
             loop = asyncio.new_event_loop()
             asyncio.set_event_loop(loop)
             
-            # Combine slot parameters into a list
+
+            # Combine slot parameters into a list (preserve None for missing slots)
             slots = [slot1, slot2, slot3, slot4, slot5]
-            # Remove any 'none' values and keep only first 5
-            slots = [slot for slot in slots if slot != 'none'][:5]
-            
-            svg_content = loop.run_until_complete(create_account_general_svg(
+
+            svg_content = loop.run_until_complete(generate_account_general_svg(
                 username=username,
                 theme=theme,
                 icon=icon,
+                animation_time=animation_time,
                 slots=slots
             ))
             

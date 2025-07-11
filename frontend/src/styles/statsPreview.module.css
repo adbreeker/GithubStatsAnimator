@@ -1,3 +1,41 @@
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* API Bar at bottom of preview card */
+.apiBar {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-start;
+  margin-top: var(--spacing-md);
+  padding: var(--spacing-sm) var(--spacing-md);
+  background: rgba(0,0,0,0.10);
+  border-radius: var(--radius-md);
+  font-size: var(--font-xs);
+  word-break: break-all;
+}
+.apiBar .actionButtons {
+  margin-top: var(--spacing-xs);
+}
+/* API Link at bottom of preview card */
+.apiLink {
+  flex: 1;
+  min-width: 0;
+  margin-right: var(--spacing-sm);
+  color: #7fd7c4;
+  font-family: var(--font-mono, monospace);
+  font-size: var(--font-xs);
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+  user-select: all;
+}
 .previewContainer {
   background: var(--tertiary-bg);
   border: var(--border-width) solid var(--border-color);
@@ -367,8 +405,8 @@
   display: flex;
   align-items: center;
   gap: var(--spacing-sm);
-  margin-top: var(--spacing-md);
-  padding: var(--spacing-sm) var(--spacing-md);
+  margin-top: var(--spacing-xs);
+  padding: var(--spacing-sm) var(--spacing-sm);
   background: rgba(34, 197, 94, 0.1);
   border: 1px solid rgba(34, 197, 94, 0.3);
   border-radius: var(--radius-md);
@@ -411,9 +449,10 @@
 }
 
 .actionButton:hover {
-  background: var(--primary-accent);
-  color: white;
-  border-color: var(--primary-accent);
+  border-color: var(--primary-blue);
+  background-color: var(--accent-bg);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(61, 90, 254, 0.15);
 }
 
 /* Responsive adjustments */

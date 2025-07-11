@@ -47,6 +47,11 @@ THEMES = {
 
 # Stat type configurations with labels and descriptions
 STAT_CONFIGS = {
+    'commits_6_months': {
+        'label': 'Commits (6 months)',
+        'description': 'Commits in the last 6 months',
+        'expensive': False
+    },
     'stars': {
         'label': 'Total Stars',
         'description': 'Total stars across all repositories',
@@ -57,7 +62,7 @@ STAT_CONFIGS = {
         'description': 'All-time commits (requires year-by-year API calls)',
         'expensive': True
     },
-    'commits_year': {
+    'commits_current_year': {
         'label': f'Commits ({datetime.now().year})',
         'description': 'Commits in current year',
         'expensive': False
@@ -143,18 +148,18 @@ class GitHubAccountStatsAPI:
         
         return None
 
-    async def fetch_account_stats(self, username: str) -> Dict[str, Any]:
+    async def fetch_account_stats(self, username: str, needed_stats: set = None) -> Dict[str, Any]:
         """
-        Fetch comprehensive account statistics using GraphQL.
-        
-        Returns basic stats that don't require expensive operations.
-        For total commits and code reviews, use separate methods.
+        Fetch comprehensive account statistics using exactly TWO GraphQL queries:
+        1. Basic user data (user, repos, PRs, issues, repositories contributed to)
+        2. All-time data (commits, code reviews, contribution calendar for streak)
         """
-        current_year = datetime.now().year
-        year_start = datetime(current_year, 1, 1).replace(tzinfo=timezone.utc).isoformat()
+        if needed_stats is None:
+            needed_stats = set()
         
-        query = """
-        query userInfo($login: String!, $from: DateTime!) {
+        # FIRST QUERY: Basic user information
+        basic_query = """
+        query userBasicInfo($login: String!) {
           user(login: $login) {
             login
             name
@@ -171,21 +176,6 @@ class GitHubAccountStatsAPI:
                 primaryLanguage { name }
               }
             }
-            contributionsCollection(from: $from) {
-              totalCommitContributions
-              totalIssueContributions
-              totalPullRequestContributions
-              totalPullRequestReviewContributions
-              contributionCalendar {
-                totalContributions
-                weeks {
-                  contributionDays {
-                    contributionCount
-                    date
-                  }
-                }
-              }
-            }
             repositoriesContributedTo(first: 100, contributionTypes: [COMMIT, ISSUE, PULL_REQUEST, REPOSITORY]) {
               totalCount
             }
@@ -195,160 +185,132 @@ class GitHubAccountStatsAPI:
         }
         """
         
-        variables = {"login": username, "from": year_start}
-        data = await self._make_graphql_request(query, variables)
-        return data['user']
-
-    async def _get_user_creation_year(self, username: str) -> int:
-        """Get the year when the user account was created."""
-        query = """
-        query userCreationDate($login: String!) {
-          user(login: $login) { createdAt }
-        }
-        """
+        # Execute first query
+        basic_data = await self._make_graphql_request(basic_query, {"login": username})
+        user_data = basic_data['user']
         
-        try:
-            data = await self._make_graphql_request(query, {"login": username})
-            created_at = data['user']['createdAt']
-            return int(created_at[:4])  # Extract year from ISO date
-        except Exception:
-            return datetime.now().year  # Fallback to current year
-
-    async def fetch_total_commits(self, username: str) -> int:
-        """
-        Fetch total commits across ALL years since account creation.
+        # Extract creation date for second query
+        created_at = user_data['createdAt']
+        creation_date = created_at.split('T')[0] + 'T00:00:00Z'  # Account creation date
         
-        WARNING: This is an expensive operation that makes multiple API calls.
-        Only call when 'commits_total' is actually needed for display.
-        """
-        creation_year = await self._get_user_creation_year(username)
+        # Get current date and year ranges for second query
+        today = datetime.now().replace(tzinfo=timezone.utc)
+        current_date = today.isoformat()
+        
+        # Current year start for commits_year stat
         current_year = datetime.now().year
+        current_year_start = datetime(current_year, 1, 1).replace(tzinfo=timezone.utc).isoformat()
         
-        # Build dynamic query for ALL years from creation to current
-        query_parts = []
-        for year in range(creation_year, current_year + 1):
-            query_parts.append(f"""
-            year{year}: contributionsCollection(from: "{year}-01-01T00:00:00Z", to: "{year}-12-31T23:59:59Z") {{
+        # For contribution calendar (one year ago to today)
+        one_year_ago = today - timedelta(days=365)
+        year_start = one_year_ago.isoformat()
+        
+        # Build second query parts based on needed stats
+        second_query_parts = []
+        
+        # Always include current year commits if commits_current_year is needed
+        if 'commits_current_year' in needed_stats:
+            second_query_parts.append(f"""currentYearCommits: contributionsCollection(from: "{current_year_start}") {{
+              totalCommitContributions
+            }}""")
+        # Add last 6 months commits if needed
+        if 'commits_6_months' in needed_stats:
+            six_months_ago = (today - timedelta(days=183)).isoformat()
+            second_query_parts.append(f"""last6MonthsCommits: contributionsCollection(from: "{six_months_ago}") {{
               totalCommitContributions
             }}""")
         
-        full_query = f"""
-        query userAllYearContributions($login: String!) {{
-          user(login: $login) {{
-            {chr(10).join(query_parts)}
-          }}
-        }}
-        """
-        
-        try:
-            data = await self._make_graphql_request(full_query, {"login": username})
-            user_data = data['user']
+        # Add all-time data if needed (year by year chunks)
+        if 'commits_total' in needed_stats or 'code_reviews' in needed_stats:
+            # Extract creation year from creation date
+            creation_year = int(created_at[:4])
+            current_year = datetime.now().year
             
-            # Sum up commits from ALL years
-            total_commits = 0
+            # Build year-by-year queries for all-time data
             for year in range(creation_year, current_year + 1):
-                year_key = f'year{year}'
-                if year_key in user_data:
-                    total_commits += user_data[year_key]['totalCommitContributions']
-            
-            return total_commits
-        except Exception:
-            return 0
-
-    async def fetch_total_code_reviews(self, username: str) -> int:
-        """
-        Fetch total code reviews across ALL years since account creation.
+                year_from = f"{year}-01-01T00:00:00Z"
+                year_to = f"{year}-12-31T23:59:59Z"
+                
+                year_parts = []
+                if 'commits_total' in needed_stats:
+                    year_parts.append("totalCommitContributions")
+                if 'code_reviews' in needed_stats:
+                    year_parts.append("totalPullRequestReviewContributions")
+                
+                second_query_parts.append(f"""year{year}Data: contributionsCollection(from: "{year_from}", to: "{year_to}") {{
+                  {chr(10).join(['                  ' + part for part in year_parts])}
+                }}""")
         
-        WARNING: This is an expensive operation that makes multiple API calls.
-        Only call when 'code_reviews' is actually needed for display.
-        """
-        creation_year = await self._get_user_creation_year(username)
-        current_year = datetime.now().year
-        
-        # Build dynamic query for ALL years from creation to current
-        query_parts = []
-        for year in range(creation_year, current_year + 1):
-            query_parts.append(f"""
-            year{year}: contributionsCollection(from: "{year}-01-01T00:00:00Z", to: "{year}-12-31T23:59:59Z") {{
-              totalPullRequestReviewContributions
+        # Add contribution calendar for streak if needed
+        if 'streak' in needed_stats:
+            second_query_parts.append(f"""contributionCalendar: contributionsCollection(from: "{year_start}") {{
+              contributionCalendar {{
+                totalContributions
+                weeks {{
+                  contributionDays {{
+                    contributionCount
+                    date
+                  }}
+                }}
+              }}
             }}""")
         
-        full_query = f"""
-        query userAllYearReviews($login: String!) {{
-          user(login: $login) {{
-            {chr(10).join(query_parts)}
-          }}
-        }}
-        """
-        
-        try:
-            data = await self._make_graphql_request(full_query, {"login": username})
-            user_data = data['user']
+        # SECOND QUERY: All-time and current year data (only if needed)
+        if second_query_parts:
+            alltime_query = f"""
+            query userAllTimeData($login: String!) {{
+              user(login: $login) {{
+                {chr(10).join(['                ' + part for part in second_query_parts])}
+              }}
+            }}
+            """
             
-            # Sum up code reviews from ALL years
-            total_reviews = 0
-            for year in range(creation_year, current_year + 1):
-                year_key = f'year{year}'
-                if year_key in user_data:
-                    total_reviews += user_data[year_key]['totalPullRequestReviewContributions']
+            # Execute second query
+            alltime_data = await self._make_graphql_request(alltime_query, {"login": username})
+            alltime_user = alltime_data['user']
             
-            return total_reviews
-        except Exception:
-            return 0
-
-    async def calculate_streak(self, contributions_calendar: Dict) -> int:
-        """
-        Calculate current contribution streak from calendar data.
-        
-        Processes contribution calendar to find the current streak of consecutive
-        days with contributions, starting from today and going backwards.
-        """
-        weeks = contributions_calendar.get('weeks', [])
-        if not weeks:
-            return 0
-        
-        # Flatten all days and sort by date (newest first)
-        all_days = []
-        for week in weeks:
-            for day in week.get('contributionDays', []):
-                all_days.append(day)
-        
-        all_days.sort(key=lambda x: x['date'], reverse=True)
-        
-        # Calculate current streak
-        streak = 0
-        today = datetime.now().date()
-        
-        for day in all_days:
-            day_date = datetime.fromisoformat(day['date'].replace('Z', '+00:00')).date()
+            # Add current year commits to user_data
+            if 'commits_current_year' in needed_stats and 'currentYearCommits' in alltime_user:
+                user_data['currentYearCommits'] = alltime_user['currentYearCommits']['totalCommitContributions']
+            # Add last 6 months commits to user_data
+            if 'commits_6_months' in needed_stats and 'last6MonthsCommits' in alltime_user:
+                user_data['last6MonthsCommits'] = alltime_user['last6MonthsCommits']['totalCommitContributions']
             
-            # Skip future dates
-            if day_date > today:
-                continue
+            # Process year-by-year all-time data
+            if 'commits_total' in needed_stats or 'code_reviews' in needed_stats:
+                creation_year = int(user_data['createdAt'][:4])
+                current_year = datetime.now().year
+                
+                if 'commits_total' in needed_stats:
+                    total_commits = 0
+                    for year in range(creation_year, current_year + 1):
+                        year_key = f'year{year}Data'
+                        if year_key in alltime_user and 'totalCommitContributions' in alltime_user[year_key]:
+                            total_commits += alltime_user[year_key]['totalCommitContributions']
+                    user_data['totalCommits'] = total_commits
+                
+                if 'code_reviews' in needed_stats:
+                    total_reviews = 0
+                    for year in range(creation_year, current_year + 1):
+                        year_key = f'year{year}Data'
+                        if year_key in alltime_user and 'totalPullRequestReviewContributions' in alltime_user[year_key]:
+                            total_reviews += alltime_user[year_key]['totalPullRequestReviewContributions']
+                    user_data['totalCodeReviews'] = total_reviews
             
-            # Check for consecutive days with contributions
-            days_diff = (today - day_date).days
-            
-            if days_diff <= 1 and day['contributionCount'] > 0:
-                streak += 1
-                today = day_date - timedelta(days=1)
-            elif days_diff <= 1 and day['contributionCount'] == 0:
-                break  # No contributions today/yesterday, streak broken
-            elif day['contributionCount'] > 0:
-                streak += 1
-                today = day_date - timedelta(days=1)
-            else:
-                break  # No contribution, streak broken
+            # Add streak data
+            if 'streak' in needed_stats and 'contributionCalendar' in alltime_user:
+                user_data['contributionCalendar'] = alltime_user['contributionCalendar']['contributionCalendar']
+                user_data['currentStreak'] = await calculate_streak(user_data['contributionCalendar'])
         
-        return streak
-
+        return user_data
 
 def calculate_basic_stats(user_data: Dict[str, Any]) -> Dict[str, int]:
     """
-    Calculate basic statistics from user data (fast, no additional API calls).
+    Calculate all statistics from consolidated user data.
     
-    These stats are computed from the main account query and don't require
-    expensive year-by-year aggregation.
+    Now using data from the two-query approach:
+    - Basic stats from first query
+    - All-time stats from second query (if available)
     """
     stats = {}
     
@@ -357,50 +319,78 @@ def calculate_basic_stats(user_data: Dict[str, Any]) -> Dict[str, int]:
                      for repo in user_data['repositories']['nodes'])
     stats['stars'] = total_stars
     
-    # Commits in current year
-    stats['commits_year'] = user_data['contributionsCollection']['totalCommitContributions']
+    # Total commits (if available from second query)
+    if 'totalCommits' in user_data:
+        stats['commits_total'] = user_data['totalCommits']
+    
+    # Total code reviews (if available from second query)
+    if 'totalCodeReviews' in user_data:
+        stats['code_reviews'] = user_data['totalCodeReviews']
+    
+    # Current year commits (if available from second query)
+    if 'currentYearCommits' in user_data:
+        stats['commits_current_year'] = user_data['currentYearCommits']
+    else:
+        stats['commits_current_year'] = 0
+
+    if 'last6MonthsCommits' in user_data:
+        stats['commits_6_months'] = user_data['last6MonthsCommits']
+    else:
+        stats['commits_6_months'] = 0
     
     # Pull requests (use all-time data from pullRequests field)
-    stats['pull_requests'] = user_data.get('pullRequests', {}).get('totalCount', 
-                                user_data['contributionsCollection']['totalPullRequestContributions'])
+    stats['pull_requests'] = user_data.get('pullRequests', {}).get('totalCount', 0)
     
     # Issues (use all-time data from issues field)
-    stats['issues'] = user_data.get('issues', {}).get('totalCount',
-                        user_data['contributionsCollection']['totalIssueContributions'])
+    stats['issues'] = user_data.get('issues', {}).get('totalCount', 0)
     
     # External contributions (repositories contributed to)
     stats['external_contributions'] = user_data['repositoriesContributedTo']['totalCount']
     
-    return stats
-
-
-async def calculate_complete_stats(username: str, user_data: Dict[str, Any], 
-                                 needed_stats: set) -> Dict[str, int]:
-    """
-    Calculate all requested statistics, including expensive ones.
-    
-    Only calculates expensive stats (commits_total, code_reviews, streak) 
-    if they are in the needed_stats set.
-    """
-    # Start with basic stats
-    stats = calculate_basic_stats(user_data)
-    
-    # Create API instance for expensive operations
-    api = GitHubAccountStatsAPI()
-    
-    # Only calculate expensive stats if needed
-    if 'commits_total' in needed_stats:
-        stats['commits_total'] = await api.fetch_total_commits(username)
-    
-    if 'code_reviews' in needed_stats:
-        stats['code_reviews'] = await api.fetch_total_code_reviews(username)
-    
-    if 'streak' in needed_stats:
-        stats['streak'] = await api.calculate_streak(
-            user_data['contributionsCollection']['contributionCalendar'])
+    # Current streak (if available from second query)
+    if 'currentStreak' in user_data:
+        stats['streak'] = user_data['currentStreak']
     
     return stats
 
+
+async def calculate_streak(contributions_calendar: Dict) -> int:
+    """
+    Calculate current contribution streak from calendar data.
+
+    Start from yesterday and count backwards, then add 1 if today has contributions.
+    This approach is more accurate as it doesn't include today's incomplete day in the base streak.
+    """
+    weeks = contributions_calendar.get('weeks', [])
+    if not weeks:
+        return 0
+    
+    # Flatten all days and sort by date (newest first)
+    all_days = []
+    for week in weeks:
+        for day in week.get('contributionDays', []):
+            all_days.append(day)
+    
+    all_days.sort(key=lambda x: x['date'], reverse=True)
+    
+    today = datetime.now().date()
+    
+    # Start streak calculation from yesterday, going backwards
+    streak = 0
+    
+    for day in all_days:
+        day_date = datetime.fromisoformat(day['date'].replace('Z', '+00:00')).date()
+        
+        if day_date == today:
+            # If today has contributions, count it as part of the streak
+            if day['contributionCount'] > 0:
+                streak += 1
+        else:
+            # If we hit a day without contributions, stop counting
+            if day['contributionCount'] == 0:
+                break
+            streak += 1
+    return streak       
 
 def format_number(num: int) -> str:
     """Format numbers for display (e.g., 1000 -> 1k, 1500000 -> 1.5M)."""
@@ -431,7 +421,7 @@ async def generate_icon_svg(icon_type: str, username: str, theme: str, x: int, y
             </g>
         </g>'''
     
-    elif icon_type in ["default", "user"]:
+    elif icon_type == "user":
         # User avatar with fallback
         api = GitHubAccountStatsAPI()
         try:
@@ -491,7 +481,7 @@ async def generate_icon_svg(icon_type: str, username: str, theme: str, x: int, y
 
 async def create_rotating_icon_svg(icon1: str, icon2: str, username: str, theme: str, 
                                  x: int, y: int, avatar_url: str = None, size: int = 80, 
-                                 streak_value: int = 0) -> str:
+                                 streak_value: int = 0, animation_time: float = 8) -> str:
     """Create a rotating coin-like icon with two sides (Y-axis flip animation)."""
     # Generate both icon sides with proper streak value
     icon1_content = await generate_icon_svg(icon1, username, theme, 0, 0, avatar_url, size, streak_value)
@@ -505,29 +495,30 @@ async def create_rotating_icon_svg(icon1: str, icon2: str, username: str, theme:
     </g>
     <style>
         .coin-container {{
-            animation: coinFlip 8s infinite ease-in-out;
+            animation: coinFlip {animation_time}s infinite ease-in-out;
             transform-origin: {size//2}px {size//2}px;
         }}
-        .side-1 {{ animation: showSide1 8s infinite ease-in-out; }}
+        .side-1 {{ animation: showSide1 {animation_time}s infinite ease-in-out; }}
         .side-2 {{ 
-            animation: showSide2 8s infinite ease-in-out;
+            animation: showSide2 {animation_time}s infinite ease-in-out;
             opacity: 0;
             transform: scaleX(-1) translateX(-{size}px);
         }}
         @keyframes coinFlip {{
             0% {{ transform: rotateY(0deg); }}
-            12.5% {{ transform: rotateY(180deg); }}
+            45.45% {{ transform: rotateY(0deg); }}
             50% {{ transform: rotateY(180deg); }}
-            62.5% {{ transform: rotateY(360deg); }}
+            95.45% {{ transform: rotateY(180deg); }}
             100% {{ transform: rotateY(360deg); }}
         }}
         @keyframes showSide1 {{
-            0%, 6.24%, 56.25%, 100% {{ opacity: 1; }}
-            6.25%, 56.24% {{ opacity: 0; }}
+            0%, 47.72%, 97.73%, 100% {{ opacity: 1; }}
+            47.73%, 97.72% {{ opacity: 0; }}
         }}
         @keyframes showSide2 {{
-            0%, 6.24%, 56.25%, 100% {{ opacity: 0; }}
-            6.25%, 56.24% {{ opacity: 1; }}
+            0%, 47.72%, 97.73%, 100% {{ opacity: 0; }}
+            47.73%, 97.72% {{ opacity: 1; }}
+        }}
         }}
     </style>'''
 
@@ -540,7 +531,9 @@ def get_stat_icon_svg(stat_type: str, theme: str) -> str:
         
         'commits_total': f'<path d="M3 2.75A2.75 2.75 0 015.75 0h4.5A2.75 2.75 0 0113 2.75v10.5A2.75 2.75 0 0110.25 16h-4.5A2.75 2.75 0 013 13.25V2.75zm2.75-1.25a1.25 1.25 0 00-1.25 1.25v10.5c0 .69.56 1.25 1.25 1.25h4.5c.69 0 1.25-.56 1.25-1.25V2.75c0-.69-.56-1.25-1.25-1.25h-4.5z" fill="{colors["accent"]}"/><path d="M6.5 5.5a.5.5 0 01.5-.5h2a.5.5 0 010 1H7a.5.5 0 01-.5-.5zm0 2a.5.5 0 01.5-.5h2a.5.5 0 010 1H7a.5.5 0 01-.5-.5zm0 2a.5.5 0 01.5-.5h2a.5.5 0 010 1H7a.5.5 0 01-.5-.5z" fill="{colors["accent"]}"/>',
         
-        'commits_year': f'<path d="M3 2.75A2.75 2.75 0 015.75 0h4.5A2.75 2.75 0 0113 2.75v10.5A2.75 2.75 0 0110.25 16h-4.5A2.75 2.75 0 013 13.25V2.75zm2.75-1.25a1.25 1.25 0 00-1.25 1.25v10.5c0 .69.56 1.25 1.25 1.25h4.5c.69 0 1.25-.56 1.25-1.25V2.75c0-.69-.56-1.25-1.25-1.25h-4.5z" fill="{colors["success"]}"/><path d="M6.5 5.5a.5.5 0 01.5-.5h2a.5.5 0 010 1H7a.5.5 0 01-.5-.5zm0 2a.5.5 0 01.5-.5h2a.5.5 0 010 1H7a.5.5 0 01-.5-.5zm0 2a.5.5 0 01.5-.5h2a.5.5 0 010 1H7a.5.5 0 01-.5-.5z" fill="{colors["success"]}"/>',
+        'commits_current_year': f'<path d="M3 2.75A2.75 2.75 0 015.75 0h4.5A2.75 2.75 0 0113 2.75v10.5A2.75 2.75 0 0110.25 16h-4.5A2.75 2.75 0 013 13.25V2.75zm2.75-1.25a1.25 1.25 0 00-1.25 1.25v10.5c0 .69.56 1.25 1.25 1.25h4.5c.69 0 1.25-.56 1.25-1.25V2.75c0-.69-.56-1.25-1.25-1.25h-4.5z" fill="{colors["success"]}"/><path d="M6.5 5.5a.5.5 0 01.5-.5h2a.5.5 0 010 1H7a.5.5 0 01-.5-.5zm0 2a.5.5 0 01.5-.5h2a.5.5 0 010 1H7a.5.5 0 01-.5-.5zm0 2a.5.5 0 01.5-.5h2a.5.5 0 010 1H7a.5.5 0 01-.5-.5z" fill="{colors["success"]}"/>',
+
+        'commits_6_months': f'<path d="M3 2.75A2.75 2.75 0 015.75 0h4.5A2.75 2.75 0 0113 2.75v10.5A2.75 2.75 0 0110.25 16h-4.5A2.75 2.75 0 013 13.25V2.75zm2.75-1.25a1.25 1.25 0 00-1.25 1.25v10.5c0 .69.56 1.25 1.25 1.25h4.5c.69 0 1.25-.56 1.25-1.25V2.75c0-.69-.56-1.25-1.25-1.25h-4.5z" fill="{colors["success"]}"/><path d="M6.5 5.5a.5.5 0 01.5-.5h2a.5.5 0 010 1H7a.5.5 0 01-.5-.5zm0 2a.5.5 0 01.5-.5h2a.5.5 0 010 1H7a.5.5 0 01-.5-.5zm0 2a.5.5 0 01.5-.5h2a.5.5 0 010 1H7a.5.5 0 01-.5-.5z" fill="{colors["success"]}"/>',
         
         'pull_requests': f'<path d="M1.5 3.25a2.25 2.25 0 113 2.122v5.256a2.251 2.251 0 11-1.5 0V5.372A2.25 2.25 0 011.5 3.25zm5.677-.177L9.573.677A.25.25 0 0110 .854v4.792a.25.25 0 01-.427.177L7.177 3.427a.25.25 0 010-.354zM3.75 2.5a.75.75 0 100 1.5.75.75 0 000-1.5zm0 9.5a.75.75 0 100 1.5.75.75 0 000-1.5z" fill="{colors["accent"]}"/>',
         
@@ -563,7 +556,7 @@ def create_stat_item_svg(label: str, value: str, stat_type: str, x: int, y: int,
     # Layout positioning
     icon_size = 14
     label_start = icon_size + 8
-    value_x = 140
+    value_x = 150
     
     return f'''<g transform="translate({x}, {y})">
         <g transform="translate(0, 0)">
@@ -575,96 +568,14 @@ def create_stat_item_svg(label: str, value: str, stat_type: str, x: int, y: int,
         <text x="{value_x}" y="10" fill="{colors['text_primary']}" font-size="12" font-weight="600" font-family="'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif">{value}</text>
     </g>'''
 
-async def create_account_general_svg(
+def create_account_general_svg(
     username: str,
-    icon: str = "default",
-    slots: List[str] = None,
-    theme: str = "dark"
-) -> str:
-    """
-    Generate account general stats SVG with optimized performance.
-    
-    Args:
-        username: GitHub username
-        icon: Icon type ('default', 'github', 'streak', 'user+streak', etc.)
-        slots: List of stats to display (max 5)
-        theme: Theme ('dark' or 'light')
-    
-    Returns:
-        SVG string with user stats and icon
-    """
-    # Set default slots if none provided
-    if slots is None:
-        slots = ['stars', 'commits_total', 'commits_year', 'pull_requests', 'issues']
-    
-    # Ensure exactly 5 slots, padding with None if needed
-    while len(slots) < 5:
-        slots.append(None)
-    slots = slots[:5]
-    
-    # Fixed card dimensions for consistent layout
-    width, height = 400, 200
-    colors = THEMES[theme]
-    
-    # Initialize API and fetch basic user data
-    api = GitHubAccountStatsAPI()
-    user_data = await api.fetch_account_stats(username)
-    
-    # Determine which stats are needed
-    needed_stats = {slot for slot in slots if slot is not None}
-    
-    # Check if streak is needed for icon display
-    if 'streak' in icon or '+streak' in icon:
-        needed_stats.add('streak')
-    
-    # Calculate stats efficiently (only what's needed)
-    stats = await calculate_complete_stats(username, user_data, needed_stats)
-    
-    # Layout positioning
-    padding = 20
-    title_height = 35
-    title_x = padding + 10
-    stats_x = padding + 10
-    stats_start_y = title_height + 20
-    stats_spacing = 25
-    
-    # Icon positioning (right side, aligned with 3rd row)
-    icon_size = 80
-    icon_x = width - icon_size - padding - 10
-    third_row_y = stats_start_y + (2 * stats_spacing)
-    icon_y = third_row_y - (icon_size // 2) + 5
-    
-    # Generate icon SVG
-    avatar_url = user_data.get('avatarUrl')
-    streak_value = stats.get('streak', 0)
-    
-    if '+' in icon:
-        # Rotating icon
-        icon1, icon2 = icon.split('+')
-        icon_svg = await create_rotating_icon_svg(
-            icon1, icon2, username, theme, icon_x, icon_y, avatar_url, icon_size, streak_value)
-    else:
-        # Single icon
-        icon_svg = await generate_icon_svg(
-            icon, username, theme, icon_x, icon_y, avatar_url, icon_size, streak_value)
-    
-    # Create stat items
-    stat_items = []
-    stats_width = width - stats_x - icon_size - padding
-    
-    for i, slot in enumerate(slots):
-        if slot is None:
-            continue
-        
-        value = stats.get(slot, 0)
-        label = STAT_CONFIGS.get(slot, {}).get('label', slot.replace('_', ' ').title())
-        formatted_value = format_number(value)
-        
-        x = stats_x
-        y = stats_start_y + (i * stats_spacing)
-        
-        stat_items.append(create_stat_item_svg(label, formatted_value, slot, x, y, theme, stats_width))
-    
+    user_data: Dict[str, Any],
+    icon_svg: str,
+    stat_items: List[str],
+    title_x: int,
+    colors: Dict[str, str] = THEMES['dark'],
+):
     # Generate final SVG
     return f'''<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="400" height="200" viewBox="0 0 400 200">
         <defs>
@@ -703,3 +614,97 @@ async def create_account_general_svg(
         <!-- Icon -->
         {icon_svg}
     </svg>'''
+
+async def generate_account_general_svg(
+    username: str,
+    icon: str = "user",
+    slots: List[str] = None,
+    theme: str = "dark",
+    animation_time: float = 8
+) -> str:
+    """
+    Generate account general stats SVG with optimized single-query performance.
+    
+    Args:
+        username: GitHub username
+        icon: Icon type ('user', 'github', 'streak', 'user+github', etc.)
+        slots: List of stats to display (max 5)
+        theme: Theme ('dark' or 'light')
+        animation_duration: Duration of icon animation in seconds (default: 8)
+    
+    Returns:
+        SVG string with user stats and icon
+    """
+    # Set default slots if none provided
+    if slots is None:
+        slots = ['stars', 'commits_total', 'commits_current_year', 'pull_requests', 'issues']
+    
+    # Ensure exactly 5 slots, padding with None if needed
+    while len(slots) < 5:
+        slots.append(None)
+    slots = slots[:5]
+    
+    # Fixed card dimensions for consistent layout
+    width, height = 400, 200
+    colors = THEMES[theme]
+    
+    # Determine which stats are needed
+    needed_stats = {slot for slot in slots if slot is not None}
+    
+    # Check if streak is needed for icon display
+    if 'streak' in icon or '+streak' in icon:
+        needed_stats.add('streak')
+    
+    # Initialize API and fetch ALL data in one consolidated query
+    api = GitHubAccountStatsAPI()
+    user_data = await api.fetch_account_stats(username, needed_stats)
+    
+    # Calculate all stats from the consolidated data
+    stats = calculate_basic_stats(user_data)
+    
+    # Layout positioning
+    padding = 20
+    title_height = 35
+    title_x = padding + 10
+    stats_x = padding + 10
+    stats_start_y = title_height + 20
+    stats_spacing = 25
+    
+    # Icon positioning (right side, aligned with 3rd row)
+    icon_size = 80
+    icon_x = width - icon_size - padding - 10
+    third_row_y = stats_start_y + (2 * stats_spacing)
+    icon_y = third_row_y - (icon_size // 2) + 5
+    
+    # Generate icon SVG
+    avatar_url = user_data.get('avatarUrl')
+    streak_value = stats.get('streak', 0)
+    
+    if '+' in icon:
+        # Rotating icon
+        icon1, icon2 = icon.split('+')
+        icon_svg = await create_rotating_icon_svg(
+            icon1, icon2, username, theme, icon_x, icon_y, avatar_url, icon_size, streak_value, animation_time)
+    else:
+        # Single icon
+        icon_svg = await generate_icon_svg(
+            icon, username, theme, icon_x, icon_y, avatar_url, icon_size, streak_value)
+    
+    # Create stat items
+    stat_items = []
+    stats_width = width - stats_x - icon_size - padding
+    
+    for i, slot in enumerate(slots):
+        if slot is None:
+            continue
+        
+        value = stats.get(slot, 0)
+        label = STAT_CONFIGS.get(slot, {}).get('label', slot.replace('_', ' ').title())
+        formatted_value = format_number(value)
+        
+        x = stats_x
+        y = stats_start_y + (i * stats_spacing)
+        
+        stat_items.append(create_stat_item_svg(label, formatted_value, slot, x, y, theme, stats_width))
+    
+    return create_account_general_svg(username, user_data, icon_svg, stat_items, title_x, colors)

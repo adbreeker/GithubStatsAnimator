@@ -70,6 +70,18 @@
   z-index: 2;
 }
 
+.typeButton.disabled {
+  opacity: 0.5;
+  cursor: not-allowed !important;
+  filter: grayscale(0.5);
+  pointer-events: none;
+  background: var(--tertiary-bg);
+  color: var(--muted-text);
+  border-color: var(--border-color);
+  box-shadow: none;
+  text-shadow: none;
+}
+
 .typeButton.active::before {
   display: none;
 }
