@@ -60,7 +60,10 @@ const StatsPreview = ({ selectedStatsType, config }) => {
       case 'Account General':
         if (config.theme) params.append('theme', config.theme);
         if (config.icon) params.append('icon', config.icon);
-        if (config.animation_time) params.append('animation_time', config.animation_time);
+        // Only include animation_time if the animation time field is visible (multi-icon)
+        if ((config.icon || 'user').includes('+') && config.animation_time) {
+          params.append('animation_time', config.animation_time);
+        }
         if (config.slots) {
           config.slots.forEach((slot, index) => {
             if (slot !== 'none') {
@@ -278,24 +281,22 @@ const StatsPreview = ({ selectedStatsType, config }) => {
   return (
     <div className={styles.previewContainer}>
       <div className={styles.header}>
-        <h3 className={styles.title}>Stats Preview</h3>
-        <div className={styles.headerActions}>
-          <div className={styles.configInfo}>
-            <span className={styles.statsType}>{selectedStatsType}</span>
-            <span className={styles.configStatus}>
-              {hasConfiguration() ? 'Configured' : 'Not configured'}
-            </span>
-          </div>
-          {svgContent && (
-            <div className={styles.actionButtons}>
-              <button onClick={downloadSVG} className={styles.actionButton}>
-                📥 Download SVG
-              </button>
-              <button onClick={copyApiUrl} className={styles.actionButton}>
-                🔗 Copy API URL
-              </button>
+        <div style={{ display: 'flex', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', width: '100%' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
+            <h3 className={styles.title}>Stats Preview</h3>
+            <div className={styles.apiInfo}>
+              <span className={styles.badge} style={{ fontSize: '9px', padding: '2px 4px', lineHeight: '1.5' }}>Live Data</span>
+              <span style={{ marginLeft: 2, fontSize: '9px', lineHeight: '1.2' }}>Connected to GitHub API</span>
             </div>
-          )}
+          </div>
+          <div className={styles.headerActions}>
+            <div className={styles.configInfo}>
+              <span className={styles.statsType}>{selectedStatsType}</span>
+              <span className={styles.configStatus}>
+                {hasConfiguration() ? 'Configured' : 'Not configured'}
+              </span>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -329,20 +330,28 @@ const StatsPreview = ({ selectedStatsType, config }) => {
           </div>
         )}
       </div>
-
-      <div className={styles.actions}>
-        <button onClick={downloadSVG} className={styles.actionButton}>
-          Download SVG
-        </button>
-        <button onClick={copyApiUrl} className={styles.actionButton}>
-          Copy API URL
-        </button>
+      {/* API Link at the bottom */}
+      <div className={styles.apiBar}>
+        <span className={styles.apiLink}>{`${window.location.origin}${getApiEndpoint()}?${buildQueryParams()}`}</span>
       </div>
-
-      {/* API Integration Complete - Real GitHub Stats */}
-      <div className={styles.apiInfo}>
-        <span className={styles.badge}>Live Data</span>
-        Connected to GitHub API
+      {/* Action Buttons below the API bar */}
+      <div className={styles.actionButtons} style={{ marginTop: 8 }}>
+        <button
+          className={styles.actionButton}
+          onClick={copyApiUrl}
+          type="button"
+        >
+          Copy URL
+        </button>
+        <button
+          className={styles.actionButton}
+          onClick={downloadSVG}
+          type="button"
+          disabled={!svgContent}
+          title={!svgContent ? 'No SVG generated yet' : 'Save as SVG'}
+        >
+          Save as SVG
+        </button>
       </div>
     </div>
   );
