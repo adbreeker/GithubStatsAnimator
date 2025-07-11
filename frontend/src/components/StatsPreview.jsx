@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import styles from '../styles/statsPreview.module.css';
 
 const StatsPreview = ({ selectedStatsType, config }) => {
@@ -6,12 +6,15 @@ const StatsPreview = ({ selectedStatsType, config }) => {
   const [svgContent, setSvgContent] = useState(null);
   const [error, setError] = useState(null);
 
+  // Debounce timer ref
+  const debounceTimerRef = useRef(null);
+
   const generatePreview = async () => {
     if (!hasConfiguration()) return;
-    
+
     setIsLoading(true);
     setError(null);
-    
+
     try {
       const apiEndpoint = getApiEndpoint();
       const queryParams = buildQueryParams();
@@ -100,9 +103,25 @@ const StatsPreview = ({ selectedStatsType, config }) => {
   };
 
   useEffect(() => {
-    if (config && Object.keys(config).length > 0) {
-      generatePreview();
+    // When stats change, set loading immediately
+    if (config && Object.keys(config).length > 0 && hasConfiguration()) {
+      setIsLoading(true);
     }
+    // Debounce preview generation
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
+    debounceTimerRef.current = setTimeout(() => {
+      if (config && Object.keys(config).length > 0 && hasConfiguration()) {
+        generatePreview();
+      }
+    }, 500);
+    // Cleanup on unmount
+    return () => {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+    };
   }, [selectedStatsType, config]);
 
   const hasConfiguration = () => {
