@@ -469,11 +469,11 @@ async def generate_icon_svg(icon_type: str, username: str, theme: str, x: int, y
             <text x="{size//2}" y="{size//2 + 8}" 
                   text-anchor="middle" 
                   fill="#ffffff" 
-                  font-size="{max(12, size//6)}" 
+                  font-size="{max(12, size//4)}" 
                   font-weight="900" 
                   font-family="'Segoe UI', sans-serif"
-                  stroke="#333333" 
-                  stroke-width="0.5">{streak_value}</text>
+                  stroke="#000000" 
+                  stroke-width="0.9">{streak_value}</text>
         </g>'''
     
     return ""  # Unknown icon type
