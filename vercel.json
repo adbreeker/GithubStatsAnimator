@@ -23,6 +23,10 @@
     {
       "src": "api/contributions-graph.py",
       "use": "@vercel/python"
+    },
+    {
+      "src": "api/views-counter.py",
+      "use": "@vercel/python"
     }
   ],
   "routes": [
@@ -41,6 +45,10 @@
     {
       "src": "/api/account-general",
       "dest": "/api/account-general.py"
+    },
+    {
+      "src": "/api/views-counter",
+      "dest": "/api/views-counter.py"
     },
     {
       "src": "/",
