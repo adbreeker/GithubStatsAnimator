@@ -43,7 +43,8 @@ class LocalDevHandler(BaseHTTPRequestHandler):
                 'health': 'api/health.py',
                 'account-general': 'api/account-general.py',
                 'top-languages': 'api/top-languages.py',
-                'contributions-graph': 'api/contributions-graph.py'
+                'contributions-graph': 'api/contributions-graph.py',
+                'views-counter': 'api/views-counter.py'
             }
             
             if endpoint not in endpoint_map:
