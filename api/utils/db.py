@@ -2,10 +2,12 @@ import os
 import psycopg2
 
 # Get Neon database connection URL from environment variable
-NEON_DATABASE_URL = os.getenv('NEON_DATABASE_URL')
 
-def get_db_connection():
-    return psycopg2.connect(NEON_DATABASE_URL, sslmode='require')
+
+def get_db_connection(connection_url=None):
+    if connection_url is None:
+        raise ValueError("Database connection URL must be provided either as an argument or via the environment variable.")
+    return psycopg2.connect(connection_url, sslmode='require')
 
 def get_or_create_user_views(db_conn, user: str) -> int:
     """
