@@ -10,7 +10,8 @@ from utils.views_counter_generator import generate_views_counter_svg
 class handler(BaseHTTPRequestHandler):
     def do_GET(self):
         try:
-            svg_content = generate_views_counter_svg()
+            user_agent = self.headers.get('User-Agent', '')
+            svg_content = generate_views_counter_svg(user_agent)
             self.send_response(200)
             self.send_header('Content-type', 'image/svg+xml')
             self.send_header('Access-Control-Allow-Origin', '*')
