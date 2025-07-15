@@ -1,12 +1,25 @@
-import random
+import os
+from .db import get_db_connection, get_or_create_user_views, set_user_views
 
-def generate_views_counter_svg(counter_value: int = None) -> str:
+def generate_views_counter_svg(user_agent: str) -> str:
     """
-    Generate a simple SVG with a random or provided counter value.
+    Get or create user in DB (from env), increment views only if user_agent is github-camo, and return SVG with the new value.
     """
-    if counter_value is None:
-        counter_value = random.randint(1000, 99999)
+    user = os.getenv('GITHUB_USERNAME', 'adbreeker')
+    db_conn = get_db_connection()
+    try:
+        views = get_or_create_user_views(db_conn, user)
+        # Only increment if called by GitHub's user agent (github-camo)
+        if user_agent.lower().startswith('github-camo'):
+            views += 1
+            set_user_views(db_conn, user, views)
+    except Exception as e:
+        print("Database error:", e)
+        views = -1
+    finally:
+        db_conn.close()
+    
     return f'''<svg xmlns="http://www.w3.org/2000/svg" width="180" height="40">
   <rect width="180" height="40" rx="8" fill="#222"/>
-  <text x="90" y="25" text-anchor="middle" fill="#fff" font-size="24" font-family="'Segoe UI', sans-serif" font-weight="bold">{counter_value}</text>
+  <text x="90" y="25" text-anchor="middle" fill="#fff" font-size="24" font-family="'Segoe UI', sans-serif" font-weight="bold">{views}</text>
 </svg>'''
