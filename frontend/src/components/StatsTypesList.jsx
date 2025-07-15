@@ -6,7 +6,8 @@ const StatsTypesList = ({ selectedType, onTypeSelect }) => {
     'Account General',
     'Top Languages',
     'Repositories',
-    'Contributions Graph'
+    'Contributions Graph',
+    'Views Counter'
   ];
 
   return (
