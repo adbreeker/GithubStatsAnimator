@@ -46,6 +46,11 @@ const MainPage = () => {
           line_alpha: 0.7,
           square_size: 11
         };
+      case 'Views Counter':
+        return {
+          theme: 'dark',
+          animated: true
+        };
       default:
         return {};
     }

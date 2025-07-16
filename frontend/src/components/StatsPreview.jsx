@@ -51,6 +51,8 @@ const StatsPreview = ({ selectedStatsType, config }) => {
         return '/api/top-languages';
       case 'Contributions Graph':
         return '/api/contributions-graph';
+      case 'Views Counter':
+        return '/api/views-counter';
       default:
         throw new Error(`Unknown stats type: ${selectedStatsType}`);
     }
@@ -63,7 +65,6 @@ const StatsPreview = ({ selectedStatsType, config }) => {
       case 'Account General':
         if (config.theme) params.append('theme', config.theme);
         if (config.icon) params.append('icon', config.icon);
-        // Only include animation_time if the animation time field is visible (multi-icon)
         if ((config.icon || 'user').includes('+') && config.animation_time) {
           params.append('animation_time', config.animation_time);
         }
@@ -75,7 +76,6 @@ const StatsPreview = ({ selectedStatsType, config }) => {
           });
         }
         break;
-        
       case 'Top Languages':
         if (config.theme) params.append('theme', config.theme);
         if (config.languages_count) params.append('languages_count', config.languages_count);
@@ -87,7 +87,10 @@ const StatsPreview = ({ selectedStatsType, config }) => {
         if (config.width) params.append('width', config.width);
         if (config.height) params.append('height', config.height);
         break;
-        
+      case 'Views Counter':
+        if (config.theme) params.append('theme', config.theme);
+        if (config.animated !== undefined) params.append('animated', config.animated);
+        break;
       case 'Contributions Graph':
         if (config.theme) params.append('theme', config.theme);
         if (config.text) params.append('text', config.text);
@@ -134,6 +137,8 @@ const StatsPreview = ({ selectedStatsType, config }) => {
         return config.repositorySlots?.some(slot => slot.type !== 'none');
       case 'Contributions Graph':
         return config.animation_time > 0 || config.text !== '';
+      case 'Views Counter':
+        return !!config.theme;
       default:
         return false;
     }
@@ -257,12 +262,31 @@ const StatsPreview = ({ selectedStatsType, config }) => {
     );
   };
 
+  const renderViewsCounterPreview = () => {
+    return (
+      <div className={styles.mockProfile}>
+        <div className={styles.mockAvatar}></div>
+        <div className={styles.mockInfo}>
+          <div className={styles.mockUsername}>username</div>
+          <div className={styles.mockStats}>
+            <span>Views Counter</span>
+            <div style={{marginTop: '8px', fontSize: '12px', color: '#888'}}>
+              Theme: {config.theme || 'dark'} | Animated: {config.animated ? 'Yes' : 'No'}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   const renderPlaceholderContent = () => {
     switch (selectedStatsType) {
       case 'Account General':
         return renderAccountGeneralPreview();
       case 'Top Languages':
         return renderTopLanguagesPreview();
+      case 'Views Counter':
+        return renderViewsCounterPreview();
       case 'Repositories':
         return renderRepositoriesPreview();
       case 'Contributions Graph':

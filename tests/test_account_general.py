@@ -55,7 +55,7 @@ class AccountGeneralTester:
             },
             {
                 'icon': 'github',
-                'slots': ['pull_requests', 'issues', 'external_contributions', None, None],
+                'slots': ['code_reviews', 'issues', 'external_contributions', None, None],
                 'animation_duration': 8
             },
             {

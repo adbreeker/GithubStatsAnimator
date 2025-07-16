@@ -21,10 +21,14 @@ async def run_all_tests():
     
     # Import and run account general tests
     from tests.test_account_general import main as test_account_general
-    
+    from tests.test_views_counter import test_views_counter
+
     print("Running Account General tests...")
     await test_account_general()
-    
+
+    print("\nRunning Views Counter tests...")
+    await test_views_counter()
+
     print("\n" + "=" * 60)
     print("🏁 All test suites completed!")
     print(f"📁 Check results in: {project_root / 'tests' / 'results'}")

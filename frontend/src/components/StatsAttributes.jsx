@@ -420,7 +420,40 @@ const StatsAttributes = ({ selectedStatsType, config, onConfigChange }) => {
     </div>
   );
 
-  // REPOSITORIES ----------------------------------------------------------------------------------------------------------------- REPOSITORIES
+  // VIEWS COUNTER ----------------------------------------------------------------------------------------------------------------- VIEWS COUNTER
+  const renderViewsCounterConfig = () => (
+    <div className={styles.configSection}>
+      <h4 className={styles.sectionTitle}>Views Counter Configuration</h4>
+      <div className={styles.configItem}>
+        <label className={styles.label}>Theme:</label>
+        <div className={styles.themeButtons}>
+          <button
+            className={`${styles.themeButton} ${(config.theme || 'dark') === 'dark' ? styles.active : ''}`}
+            onClick={() => onConfigChange({ ...config, theme: 'dark' })}
+          >
+            Dark
+          </button>
+          <button
+            className={`${styles.themeButton} ${config.theme === 'light' ? styles.active : ''}`}
+            onClick={() => onConfigChange({ ...config, theme: 'light' })}
+          >
+            Light
+          </button>
+        </div>
+      </div>
+      <div className={styles.configItem}>
+        <label className={styles.checkboxLabel}>
+          <input
+            type="checkbox"
+            className={styles.checkbox}
+            checked={config.animated ?? true}
+            onChange={e => onConfigChange({ ...config, animated: e.target.checked })}
+          />
+          Animated
+        </label>
+      </div>
+    </div>
+  );
   const renderRepositoriesConfig = () => (
     <div className={styles.configSection}>
       <h4 className={styles.sectionTitle}>Repositories Configuration</h4>
@@ -588,6 +621,8 @@ const StatsAttributes = ({ selectedStatsType, config, onConfigChange }) => {
         return renderRepositoriesConfig();
       case 'Contributions Graph':
         return renderContributionsGraphConfig();
+      case 'Views Counter':
+        return renderViewsCounterConfig();
       default:
         return (
           <div className={styles.emptyState}>
@@ -602,7 +637,6 @@ const StatsAttributes = ({ selectedStatsType, config, onConfigChange }) => {
       <div className={styles.header}>
         <h3 className={styles.title}>Configuration</h3>
       </div>
-
       {renderConfigForType()}
     </div>
   );
