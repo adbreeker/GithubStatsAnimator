@@ -22,28 +22,33 @@ Dynamically updated animated GitHub stats generator with customizable SVG output
 - [🌟 Inspiration](#-inspiration)
 - [📄 License](#-license)
 
+
 ## ✨ Features
 
-- **🎬 Animated SVG Generation**: Smooth animations for contribution graphs with customizable text overlays
-- **📊 Multiple Stats Types**: 
-  - Account general stats (stars, commits, PRs, issues, etc.)
-  - Top programming languages with percentages
-  - Animated contributions graph with custom text
-- **🎨 Theme Support**: Light and dark themes with customizable colors
-- **⚡ Live Preview**: Real-time configuration with instant preview in React frontend
-- **🔄 Dynamic Updates**: Real-time data fetching from GitHub GraphQL API
+- **🎬 Animated SVG Generation**: Smooth, multi-phase animations for contribution graphs, stat cards, and counters, with customizable text overlays and pixel font effects.
+- **📊 Multiple Stats Types**:
+  - **Account General Card**: Stars, commits (total, year, 6 months), PRs, code reviews, issues, external contributions, and animated streak. Choose from 6 stat slots and 6 icon types (user, GitHub, streak, or any rotating combo).
+  - **Top Languages Chart**: Fully animated, responsive SVG bar chart with emoji for top language, custom width/height, decimal places, "Other" category, and language exclusion.
+  - **Animated Contributions Graph**: Custom text overlays using pixel font, multi-phase "eating line" animation, color/alpha/square size controls, and robust error handling.
+  - **Views Counter**: Animated slot-machine SVG counter for profile views, with persistent counting (Postgres/Neon DB support, fallback to "a crapload" if no DB).
+- **🎨 Theme Support**: Light and dark themes with customizable colors for all SVGs.
+- **⚡ Live Preview**: Real-time configuration and instant SVG preview in the React frontend.
+- **🔄 Dynamic Updates**: Real-time data fetching from GitHub GraphQL API for all stats.
 - **🎯 Customizable Elements**:
-  - Animation timing and colors
-  - Text overlays on contribution graphs
-  - Icon types (user avatar, GitHub logo, streak counter)
-  - Color schemes and transparency
-- **📱 Responsive Design**: Modern React frontend with CSS modules
-- **🚀 Easy Deployment**: Pre-configured for Vercel with environment variables
-- **🔗 Direct API Access**: RESTful endpoints for direct SVG generation
+  - Animation timing, icon rotation, and color/alpha controls
+  - Text overlays and pixel font for contributions graph
+  - Stat slot selection, icon types, and layout
+  - Bar chart width/height, decimal places, and language exclusion
+- **🔢 Views Counter**: Animated slot-machine style, persistent (Postgres/Neon DB) or fallback, with dark/light themes and accessibility.
+- **🧪 Robust Testing Suite**: Controlled, reproducible SVG output tests for all endpoints, with results and reports saved to `/tests/results`.
+- **📱 Responsive & Accessible**: Modern React frontend with CSS modules, responsive SVGs, and accessible design.
+- **🚀 Easy Deployment**: Pre-configured for Vercel, Neon DB, and local development with `.env.example` and robust error handling.
+- **🔗 Direct API Access**: RESTful endpoints for direct SVG generation and easy embedding in Markdown/HTML.
+- **🛠️ Extensible Architecture**: Modular backend/frontend for easy addition of new stat types or customizations.
 
 ## 🚀 Live Demo
 
-Visit the live demo: [GitHub Stats Animator](https://your-vercel-deployment.vercel.app)
+Visit the live demo: [GitHub Stats Animator](https://github-stats-animator.vercel.app)
 
 ## 🖼️ Examples
 
@@ -66,35 +71,47 @@ Visit the live demo: [GitHub Stats Animator](https://your-vercel-deployment.verc
 
 All API endpoints return SVG content that can be directly embedded in HTML or Markdown.
 
+
 ### `/api/account-general`
-Generate general account statistics card.
+Generate a customizable account statistics card.
 
 **Parameters:**
 - `theme` - `light` | `dark` (default: `dark`)
-- `icon` - `default` | `user` | `github` | `streak` | combinations with `+` (default: `default`)
-- `slot1-5` - Statistics to display: `stars`, `commits_total`, `commits_year`, `pull_requests`, `code_reviews`, `issues`, `external_contributions`
+- `icon` - `user` | `github` | `streak` | `user+github` | `user+streak` | `github+streak` (rotating combos supported)
+- `animation_time` - Icon rotation duration in seconds (default: `8`)
+- `slot1-5` - Statistics to display: `stars`, `commits_total`, `commits_current_year`, `commits_6_months`, `pull_requests`, `code_reviews`, `issues`, `external_contributions`, `streak`
 
 ### `/api/top-languages`
-Generate top programming languages chart.
+Generate a fully animated, responsive top languages bar chart.
 
 **Parameters:**
 - `theme` - `light` | `dark` (default: `dark`)
-- `languages_count` - Number of languages to show (default: `5`)
-- `decimal_places` - Decimal places for percentages (default: `1`)
+- `languages_count` - Number of languages to show (default: `5`, max: `20`)
+- `decimal_places` - Decimal places for percentages (default: `1`, max: `5`)
 - `count_other_languages` - Include "Other" category (default: `false`)
 - `exclude_languages` - Comma-separated list of languages to exclude
+- `width` - Chart width in px (default: `400`, min: `200`, max: `1000`)
+- `height` - Chart height in px (default: `300`, min: `150`, max: `800`)
 
 ### `/api/contributions-graph`
-Generate animated contributions graph.
+Generate an animated contributions graph with custom text overlay.
 
 **Parameters:**
 - `theme` - `light` | `dark` (default: `dark`)
 - `text` - Text to animate over the graph (default: `ADBREEKER`)
 - `line_color` - Animation line color (default: `#ff8c00`)
 - `line_alpha` - Line transparency 0-1 (default: `0.7`)
-- `square_size` - Size of contribution squares (default: `11`)
+- `square_size` - Size of contribution squares (default: `11`, min: `1`, max: `50`)
 - `animation_time` - Animation duration in seconds (default: `8.0`)
 - `pause_time` - Pause between animations in seconds (default: `0.0`)
+
+### `/api/views-counter`
+Animated slot-machine style SVG counter for profile views.
+
+**Parameters:**
+- `theme` - `light` | `dark` (default: `dark`)
+- `animated` - `true` | `false` (default: `true`)
+
 
 ## 🔧 Personal Deployment on Vercel
 
@@ -190,12 +207,14 @@ That's it! 🎉 Your personal GitHub Stats Animator is now live and ready to use
 
 ## ⚙️ Configuration
 
+
 ### Environment Variables
 
 | Variable | Description | Required | Example |
 |----------|-------------|----------|---------|
 | `GITHUB_USERNAME` | Your GitHub username | ✅ | `octocat` |
 | `GITHUB_TOKEN` | GitHub Personal Access Token | ✅ | `ghp_xxxxxxxxxxxx` |
+| `NEON_DATABASE_URL` | Neon/Postgres DB URL for persistent views counter | ❌ | `postgres://...` |
 | `DEV_PORT` | Local development port | ❌ | `8000` |
 | `DEV_HOST` | Local development host | ❌ | `localhost` |
 
@@ -242,6 +261,7 @@ Key files for customization:
 - `api/*.py` - API endpoint handlers
 - `api/utils/chars_patterns.py` - Character patterns for animations
 
+
 ### Adding New Stats Types
 1. Add stat configuration in `api/utils/account_general_generator.py`
 2. Implement fetching logic in the `GitHubAccountStatsAPI` class
@@ -249,15 +269,17 @@ Key files for customization:
 
 ## 🌟 Inspiration
 
-This project was initially inspired by [anuraghazra/github-readme-stats](https://github.com/anuraghazra/github-readme-stats), which I used for several years before deciding to create my own version. While maintaining some similarities to the original concept, this project introduces tons of new features including:
 
-- **Animated contributions graphs** with custom text overlays
-- **Interactive React frontend** for real-time configuration
-- **Modern technology stack** with React + Python backend
-- **Enhanced performance** with optimized GraphQL queries
-- **Expanded statistics** and visualization options
+This project was initially inspired by [anuraghazra/github-readme-stats](https://github.com/anuraghazra/github-readme-stats), but is a complete rewrite with a modern stack and many new features:
 
-The goal was to create a more customizable, feature-rich, and modern alternative with nicely animated visuals using technologies closer to my heart while building upon the excellent foundation established by the original project.
+- **Animated contributions graphs** with custom pixel font overlays and multi-phase animation
+- **Interactive React frontend** for real-time configuration, preview, and SVG download
+- **Modern technology stack**: React 19, Vite, Python 3.11+, async GraphQL, and Postgres/Neon DB
+- **Advanced SVGs**: Animated bar charts, slot-machine counters, rotating icons, and more
+- **Robust testing**: Controlled, reproducible SVG output tests for all endpoints
+- **Extensible and modular**: Easy to add new stat types or customize both backend and frontend
+
+The goal: a more customizable, feature-rich, and modern alternative with beautiful animated visuals, robust API, and a delightful user/developer experience.
 
 ## 📄 License
 
