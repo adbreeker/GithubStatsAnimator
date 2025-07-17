@@ -603,7 +603,7 @@ const StatsAttributes = ({ selectedStatsType, config, onConfigChange }) => {
           type="range"
           className={styles.slider}
           min="1"
-          max="50"
+          max="30"
           value={config.square_size || 11}
           onChange={(e) => handleConfigUpdate('square_size', parseInt(e.target.value))}
         />
