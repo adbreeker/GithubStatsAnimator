@@ -98,6 +98,24 @@ const MainPage = () => {
           />
         </section>
       </main>
+
+      {/* Classic Footer */}
+      <footer className={styles.footer}>
+        <div className={styles.footerRow}>
+          <span className={styles.footerCopyright}>
+            &copy; {new Date().getFullYear()} adbreeker
+          </span>
+          <span className={styles.footerDivider}>|</span>
+          <a
+            href="https://github.com/adbreeker/GithubStatsAnimator"
+            target="_blank"
+            rel="noopener noreferrer"
+            className={styles.footerLink}
+          >
+            GitHub Repository
+          </a>
+        </div>
+      </footer>
     </div>
   );
 };
