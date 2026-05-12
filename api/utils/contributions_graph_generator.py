@@ -321,34 +321,66 @@ def create_contributions_svg(username: str, contributions_data: Dict, theme: str
                     
                     # Text appears as lines move out during phase 2 (20-40%)
                     write_time = phase_time + write_progress * phase_time
+                    # Ensure text doesn't start before the square is eaten.
+                    write_time = max(write_time, eat_time + small_delay)
                     
-                    keyframes = [
-                        0,                # Start: empty
-                        1 * phase_time,               # Phase 1 end: still empty
-                        write_time,       # Just before writing
-                        write_time + small_delay, # Just after writing (text appears)
-                        2 * phase_time,               # Phase 2 end: text visible
-                        eat_time + 2 * phase_time,    # Just before eating in phase 3 (40-60%)
-                        eat_time + 2 * phase_time + small_delay,  # Just after eating (empty)
-                        4 * phase_time,               # End: empty (pause phase)
-                        100
-                    ]
-                    
+                    if has_contribution:
+                        keyframes = [
+                            0,                              # Start: original
+                            eat_time,                       # Just before eating
+                            eat_time + small_delay,         # Just after eating (empty)
+                            write_time,                     # Just before writing
+                            write_time + small_delay,       # Text appears
+                            2 * phase_time,                 # Phase 2 end: text visible
+                            eat_time + 2 * phase_time,      # Just before eating in phase 3
+                            eat_time + 2 * phase_time + small_delay,  # Just after eating (empty)
+                            restore_time,                   # Just before restoring
+                            restore_time + small_delay,     # Just after restoring
+                            4 * phase_time,                 # End: original (pause phase)
+                            100
+                        ]
+                        colors_sequence = [
+                            original_color,  # Start
+                            original_color,  # Just before eating
+                            empty_color,     # Just after eating
+                            empty_color,     # Just before writing
+                            text_color,      # Text appears
+                            text_color,      # Phase 2 end
+                            text_color,      # Just before eating
+                            empty_color,     # Just after eating
+                            empty_color,     # Just before restoring
+                            original_color,  # Just after restoring
+                            original_color,  # End
+                            original_color
+                        ]
+                    else:
+                        keyframes = [
+                            0,                              # Start: empty
+                            1 * phase_time,                 # Phase 1 end: still empty
+                            write_time,                     # Just before writing
+                            write_time + small_delay,       # Text appears
+                            2 * phase_time,                 # Phase 2 end: text visible
+                            eat_time + 2 * phase_time,      # Just before eating in phase 3
+                            eat_time + 2 * phase_time + small_delay,  # Just after eating (empty)
+                            4 * phase_time,                 # End: empty (pause phase)
+                            100
+                        ]
+                        colors_sequence = [
+                            empty_color,      # Start: empty
+                            empty_color,      # Phase 1 end: still empty
+                            empty_color,      # Just before writing
+                            text_color,       # Text appears
+                            text_color,       # Phase 2 end
+                            text_color,       # Just before eating
+                            empty_color,      # Just after eating
+                            empty_color,      # End: empty
+                            empty_color       # Pause phase: stay empty
+                        ]
+
                     # Clamp intermediate keyframes to ensure valid sequence
                     for i in range(1, len(keyframes) - 1):
                         keyframes[i] = max(keyframes[i-1], min(keyframes[i], keyframes[i+1]))
-                    
-                    colors_sequence = [
-                        empty_color,      # Start: empty
-                        empty_color,      # Phase 1 end: still empty
-                        empty_color,      # Just before writing
-                        text_color,       # Text appears (written by line)
-                        text_color,       # Text visible through phase 2
-                        text_color,       # Just before eating
-                        empty_color,      # Just after eating
-                        empty_color,       # End: empty
-                        empty_color       # Pause phase: stay empty
-                    ]
+
                 elif has_contribution:
                     # Regular contribution squares: normal eating and restoring (updated timing)
                     keyframes = [
@@ -361,11 +393,6 @@ def create_contributions_svg(username: str, contributions_data: Dict, theme: str
                         4 * phase_time,               # End: original color (pause phase)
                         100
                     ]
-
-                    # Clamp intermediate keyframes to ensure valid sequence
-                    for i in range(1, len(keyframes) - 1):
-                        keyframes[i] = max(keyframes[i-1], min(keyframes[i], keyframes[i+1]))
-                    
                     colors_sequence = [
                         original_color,  # Start
                         original_color,  # Just before eating
@@ -376,10 +403,16 @@ def create_contributions_svg(username: str, contributions_data: Dict, theme: str
                         original_color,   # End
                         original_color,
                     ]
+
+                    # Clamp intermediate keyframes to ensure valid sequence
+                    for i in range(1, len(keyframes) - 1):
+                        keyframes[i] = max(keyframes[i-1], min(keyframes[i], keyframes[i+1]))
+
                 else:
                     # Empty text squares (spaces): stay empty throughout
                     keyframes = [0, 100]  # Updated to match pause phase
                     colors_sequence = [empty_color, empty_color]
+
                 # Convert to keyTimes format (0-1) and apply animation
                 key_times = [t/100 for t in keyframes]
                 key_times_str = ';'.join([f'{t:.3f}' for t in key_times])
